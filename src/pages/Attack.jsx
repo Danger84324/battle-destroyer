@@ -296,16 +296,6 @@ export default function Attack({ toggleTheme, theme }) {
                                 ))}
                             </ul>
                         </div>
-
-                        {/* Warning */}
-                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4">
-                            <p className="text-yellow-400 font-bold text-xs mb-1 flex items-center gap-2">
-                                <FaExclamationTriangle size={14} /> Warning
-                            </p>
-                            <p className="text-yellow-500/70 text-xs leading-relaxed">
-                                Only use this tool on servers you own or have explicit permission to test.
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>
