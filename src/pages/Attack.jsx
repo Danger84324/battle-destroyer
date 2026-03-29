@@ -302,11 +302,11 @@ export default function Attack({ toggleTheme, theme }) {
                                 {/* Launch Button — add captchaReady to disabled */}
                                 <button
                                     onClick={launch}
-                                    disabled={launching || user.credits < 1 || !captchaReady}  {/* ✅ add !captchaReady */}
+                                    disabled={launching || user.credits < 1 || !captchaReady}
                                     className={`w-full py-4 rounded-xl font-black text-base tracking-wider transition-all flex items-center justify-center gap-3 ${user.credits < 1
                                             ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                                             : !captchaReady
-                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'  // ✅ new state
+                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                                                 : launching
                                                     ? 'bg-red-700 text-white cursor-wait'
                                                     : 'bg-red-600 hover:bg-red-700 active:scale-95 text-white shadow-xl shadow-red-900/30'
@@ -316,7 +316,7 @@ export default function Attack({ toggleTheme, theme }) {
                                     ) : user.credits < 1 ? (
                                         '⛔ Insufficient Credits'
                                     ) : !captchaReady ? (
-                                        '🔒 Complete CAPTCHA to Launch'   // ✅ new state
+                                        '🔒 Complete CAPTCHA to Launch'
                                     ) : (
                                         '🚀 Launch Attack'
                                     )}
