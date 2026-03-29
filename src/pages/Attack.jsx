@@ -145,9 +145,12 @@ export default function Attack({ toggleTheme, theme }) {
                         <p className={`text-sm ${sub}`}>
                             Free Account — attacks limited to <span className="font-bold text-white">60 seconds</span>
                         </p>
-                        <span className="text-xs bg-red-600/20 border border-red-600/30 text-red-400 px-3 py-1 rounded-lg font-semibold whitespace-nowrap">
+                        <Link
+                            to="/contact"
+                            className="text-xs bg-red-600/20 hover:bg-red-600 border border-red-600/30 text-red-400 hover:text-white px-3 py-1 rounded-lg font-semibold whitespace-nowrap transition-all"
+                        >
                             Upgrade to Pro
-                        </span>
+                        </Link>
                     </div>
                 )}
 
