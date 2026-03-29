@@ -8,14 +8,14 @@ import PasswordInput from '../components/PasswordInput';
 const TOKEN_MAX_AGE_MS = 270_000;
 
 export default function Login({ toggleTheme, theme }) {
-    const [form, setForm]               = useState({ email: '', password: '' });
+    const [form, setForm] = useState({ email: '', password: '' });
     const [captchaReady, setCaptchaReady] = useState(false);
-    const [error, setError]             = useState('');
-    const [loading, setLoading]         = useState(false);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const captchaTokenRef  = useRef('');
+    const captchaTokenRef = useRef('');
     const captchaIssuedRef = useRef(null);
-    const expiryTimerRef   = useRef(null);
+    const expiryTimerRef = useRef(null);
 
     // FIX: ref pointing to the TurnstileWidget instance so we can call
     // widget.reset() with the correct widgetId — window.turnstile.reset()
@@ -24,12 +24,12 @@ export default function Login({ toggleTheme, theme }) {
     const turnstileRef = useRef(null);
 
     const navigate = useNavigate();
-    const API_URL  = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
     const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
     const resetCaptcha = useCallback(() => {
-        captchaTokenRef.current  = '';
+        captchaTokenRef.current = '';
         captchaIssuedRef.current = null;
         setCaptchaReady(false);
         clearTimeout(expiryTimerRef.current);
@@ -39,7 +39,7 @@ export default function Login({ toggleTheme, theme }) {
     }, []);
 
     const handleVerify = useCallback((token) => {
-        captchaTokenRef.current  = token;
+        captchaTokenRef.current = token;
         captchaIssuedRef.current = Date.now();
         setCaptchaReady(true);
         clearTimeout(expiryTimerRef.current);
@@ -52,7 +52,7 @@ export default function Login({ toggleTheme, theme }) {
         e.preventDefault();
         setError('');
 
-        const token    = captchaTokenRef.current;
+        const token = captchaTokenRef.current;
         const issuedAt = captchaIssuedRef.current;
 
         if (!token) return setError('Please complete the CAPTCHA.');
@@ -101,7 +101,7 @@ export default function Login({ toggleTheme, theme }) {
                 <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-red-800/10 rounded-full blur-2xl" />
                 <div className="relative text-center px-12">
                     <div className="flex justify-center mb-6">
-                        <FaCrosshairs className="text-red-500" size={100} />
+                        <img src="/logo512.png" alt="Battle Destroyer" className="w-24 h-24 object-contain drop-shadow-lg" />
                     </div>
                     <h2 className="text-4xl font-black text-white tracking-widest mb-3">BATTLE</h2>
                     <h2 className="text-4xl font-black text-red-500 tracking-widest mb-6">DESTROYER</h2>
@@ -110,7 +110,7 @@ export default function Login({ toggleTheme, theme }) {
                     </p>
                     <div className="mt-8 flex justify-center gap-4">
                         {[
-                            { icon: FaGem,  text: 'Credits System' },
+                            { icon: FaGem, text: 'Credits System' },
                             { icon: FaLink, text: 'Referrals' },
                             { icon: FaBolt, text: 'Attack Hub' },
                         ].map((f, i) => (
@@ -126,9 +126,8 @@ export default function Login({ toggleTheme, theme }) {
             <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 relative">
 
                 <button onClick={toggleTheme}
-                    className={`absolute top-4 right-4 w-9 h-9 rounded-lg flex items-center justify-center text-base transition-all ${
-                        dark ? 'bg-gray-800 hover:bg-gray-700 text-yellow-400' : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
-                    }`}>
+                    className={`absolute top-4 right-4 w-9 h-9 rounded-lg flex items-center justify-center text-base transition-all ${dark ? 'bg-gray-800 hover:bg-gray-700 text-yellow-400' : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+                        }`}>
                     {dark ? '☀️' : '🌙'}
                 </button>
 
@@ -136,7 +135,7 @@ export default function Login({ toggleTheme, theme }) {
 
                     <div className="lg:hidden text-center mb-8">
                         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-red-600/20 border border-red-600/30 mb-3">
-                            <FaCrosshairs className="text-red-500" size={24} />
+                            <img src="/logo512.png" alt="Battle Destroyer" className="w-9 h-9 object-contain" />
                         </div>
                         <h1 className="text-2xl font-black text-red-500 tracking-widest">BATTLE-DESTROYER</h1>
                     </div>
@@ -157,10 +156,9 @@ export default function Login({ toggleTheme, theme }) {
                             <input
                                 name="email" type="email" value={form.email} onChange={handle} required
                                 placeholder="you@example.com"
-                                className={`w-full rounded-xl px-4 py-3 text-sm border focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition ${
-                                    dark ? 'bg-gray-800 text-white border-gray-700 placeholder-gray-600'
-                                         : 'bg-white text-gray-900 border-gray-300 placeholder-gray-400'
-                                }`}
+                                className={`w-full rounded-xl px-4 py-3 text-sm border focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition ${dark ? 'bg-gray-800 text-white border-gray-700 placeholder-gray-600'
+                                    : 'bg-white text-gray-900 border-gray-300 placeholder-gray-400'
+                                    }`}
                             />
                         </div>
 

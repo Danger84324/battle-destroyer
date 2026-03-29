@@ -33,7 +33,7 @@ export default function Navbar({ toggleTheme, theme }) {
                         <img
                             src="/logo512.png"
                             alt="Battle Destroyer Logo"
-                            className="w-8 h-8 rounded-lg object-contain group-hover:scale-110 transition-transform"
+                            className="w-10 h-10 rounded-lg object-contain group-hover:scale-110 transition-transform"
                         />
                         <span className="font-black text-red-500 tracking-widest text-sm sm:text-base hidden xs:block">
                             BATTLE-DESTROYER
