@@ -4,7 +4,7 @@ import axios from 'axios';
 import { FaGem, FaUsers, FaCoins, FaKey, FaLink, FaGift, FaBullseye, FaCopy, FaCheck } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 
-export default function Dashboard({ toggleTheme, theme }) {
+export default function Dashboard({ toggleTheme, theme, setIsAuth }) {
     const [user, setUser] = useState(null);
     const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
@@ -69,7 +69,7 @@ export default function Dashboard({ toggleTheme, theme }) {
 
     return (
         <div className={`min-h-screen ${bg} transition-colors duration-300`}>
-            <Navbar toggleTheme={toggleTheme} theme={theme} />
+          <Navbar toggleTheme={toggleTheme} theme={theme} setIsAuth={setIsAuth} />
 
             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 

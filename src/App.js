@@ -4,28 +4,37 @@ import Login     from './pages/Login';
 import Signup    from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Attack    from './pages/Attack';
-import Contact   from './pages/Contact';   // ← make sure this exists
+import Contact   from './pages/Contact';
 
 function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  
+  // ✅ Reactive auth state instead of token()
+  const [isAuth, setIsAuth] = useState(!!localStorage.getItem('token'));
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // ✅ Listen for localStorage changes (login/logout)
+  useEffect(() => {
+    const checkAuth = () => setIsAuth(!!localStorage.getItem('token'));
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
+  }, []);
+
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
-  const token = () => localStorage.getItem('token');
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/"          element={<Navigate to={token() ? "/dashboard" : "/login"} />} />
-        <Route path="/login"     element={<Login     toggleTheme={toggleTheme} theme={theme} />} />
-        <Route path="/signup"    element={<Signup    toggleTheme={toggleTheme} theme={theme} />} />
-        <Route path="/dashboard" element={token() ? <Dashboard toggleTheme={toggleTheme} theme={theme} /> : <Navigate to="/login" />} />
-        <Route path="/attack"    element={token() ? <Attack    toggleTheme={toggleTheme} theme={theme} /> : <Navigate to="/login" />} />
-        <Route path="/contact"   element={token() ? <Contact   toggleTheme={toggleTheme} theme={theme} /> : <Navigate to="/login" />} />
+        <Route path="/"          element={<Navigate to={isAuth ? "/dashboard" : "/login"} />} />
+        <Route path="/login"     element={!isAuth ? <Login     toggleTheme={toggleTheme} theme={theme} setIsAuth={setIsAuth} /> : <Navigate to="/dashboard" />} />
+        <Route path="/signup"    element={!isAuth ? <Signup    toggleTheme={toggleTheme} theme={theme} setIsAuth={setIsAuth} /> : <Navigate to="/dashboard" />} />
+        <Route path="/dashboard" element={isAuth ? <Dashboard toggleTheme={toggleTheme} theme={theme} setIsAuth={setIsAuth} /> : <Navigate to="/login" />} />
+        <Route path="/attack"    element={isAuth ? <Attack    toggleTheme={toggleTheme} theme={theme} /> : <Navigate to="/login" />} />
+        <Route path="/contact"   element={isAuth ? <Contact   toggleTheme={toggleTheme} theme={theme} /> : <Navigate to="/login" />} />
         <Route path="*"          element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

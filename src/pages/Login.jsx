@@ -7,7 +7,7 @@ import PasswordInput from '../components/PasswordInput';
 
 const TOKEN_MAX_AGE_MS = 270_000;
 
-export default function Login({ toggleTheme, theme }) {
+export default function Login({ toggleTheme, theme, setIsAuth }) {
     const [form, setForm] = useState({ email: '', password: '' });
     const [captchaReady, setCaptchaReady] = useState(false);
     const [error, setError] = useState('');
@@ -72,6 +72,7 @@ export default function Login({ toggleTheme, theme }) {
 
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
+            setIsAuth(true);   
             navigate('/dashboard');
 
         } catch (err) {

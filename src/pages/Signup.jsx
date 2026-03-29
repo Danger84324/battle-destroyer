@@ -9,7 +9,7 @@ import PasswordStrength from '../components/PasswordStrength';
 
 const TOKEN_MAX_AGE_MS = 270_000;
 
-export default function Signup({ toggleTheme, theme }) {
+export default function Signup({ toggleTheme, theme, setIsAuth  }) {
     const [form, setForm] = useState({ username: '', email: '', password: '', referralCode: '' });
     const [captchaReady, setCaptchaReady] = useState(false);
     const [fingerprint, setFingerprint] = useState('');
@@ -81,7 +81,9 @@ export default function Signup({ toggleTheme, theme }) {
 
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
+
             setSuccess(data.message || 'Account created! Redirecting…');
+            setIsAuth(true);
 
             // FIX: navigate inside try so it only runs on actual success.
             // Previously setLoading(false) was outside try/catch and ran immediately,

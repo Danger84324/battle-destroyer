@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBolt, FaBullseye, FaSignOutAlt, FaGem, FaUser, FaBars, FaTimes } from 'react-icons/fa';
 
-export default function Navbar({ toggleTheme, theme }) {
+export default function Navbar({ toggleTheme, theme, setIsAuth  }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
@@ -10,6 +10,7 @@ export default function Navbar({ toggleTheme, theme }) {
 
     const logout = () => {
         localStorage.clear();
+        setIsAuth(false);
         navigate('/login');
     };
 
