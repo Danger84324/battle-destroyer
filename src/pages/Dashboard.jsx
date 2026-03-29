@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { FaGem, FaUsers, FaCoins, FaKey, FaLink, FaGift, FaBullseye } from 'react-icons/fa';
+import { FaGem, FaUsers, FaCoins, FaKey, FaLink, FaGift, FaBullseye, FaCopy, FaCheck } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 
 export default function Dashboard({ toggleTheme, theme }) {
@@ -107,13 +107,19 @@ export default function Dashboard({ toggleTheme, theme }) {
                                 <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${sub}`}>{stat.label}</p>
 
                                 {isUserId ? (
-                                    <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center justify-between gap-2">
                                         <p className={`font-black text-sm font-mono ${stat.color} truncate`}>
                                             {user.userId}
                                         </p>
-                                        <span className={`text-xs font-bold whitespace-nowrap shrink-0 ${copiedId ? 'text-green-400' : 'text-blue-400'}`}>
-                                            {copiedId ? '✓ Copied' : 'Copy'}
-                                        </span>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); copyUserId(); }}
+                                            className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${copiedId
+                                                    ? 'bg-green-600/20 border-green-500/40 text-green-400'
+                                                    : 'bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600/20'
+                                                }`}
+                                        >
+                                            {copiedId ? <FaCheck size={11} /> : <FaCopy size={11} />}
+                                        </button>
                                     </div>
                                 ) : (
                                     <p className={`font-black ${stat.color} ${stat.small ? 'text-sm font-mono' : 'text-2xl sm:text-3xl'}`}>
