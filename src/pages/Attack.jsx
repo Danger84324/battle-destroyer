@@ -92,8 +92,12 @@ export default function Attack({ toggleTheme, theme }) {
 
     const MAX_DURATION = user?.isPro ? 300 : 60;
 
-    const bg = theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50';
-    const card = theme === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200';
+    const bg = theme === 'dark'
+        ? 'bg-gray-950 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950'
+        : 'bg-gray-50 bg-gradient-to-br from-gray-100 via-gray-50 to-white';
+    const card = theme === 'dark'
+        ? 'bg-gray-900/60 border-gray-700/50 backdrop-blur-xl shadow-xl shadow-black/20'
+        : 'bg-white/70 border-gray-200/60 backdrop-blur-xl shadow-xl shadow-gray-200/50';
     const text = theme === 'dark' ? 'text-white' : 'text-gray-900';
     const sub = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
     const inp = theme === 'dark'

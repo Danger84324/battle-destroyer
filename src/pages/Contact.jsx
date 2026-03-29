@@ -71,10 +71,14 @@ const plans = [
 ];
 
 export default function Contact({ toggleTheme, theme }) {
-    const bg   = theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50';
-    const card = theme === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200';
+    const bg = theme === 'dark'
+        ? 'bg-gray-950 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950'
+        : 'bg-gray-50 bg-gradient-to-br from-gray-100 via-gray-50 to-white';
+    const card = theme === 'dark'
+        ? 'bg-gray-900/60 border-gray-700/50 backdrop-blur-xl shadow-xl shadow-black/20'
+        : 'bg-white/70 border-gray-200/60 backdrop-blur-xl shadow-xl shadow-gray-200/50';
     const text = theme === 'dark' ? 'text-white' : 'text-gray-900';
-    const sub  = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
+    const sub = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
 
     return (
         <div className={`min-h-screen ${bg} transition-colors duration-300`}>
@@ -172,7 +176,7 @@ export default function Contact({ toggleTheme, theme }) {
                                 className={`w-full py-3 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 transition-all active:scale-95 ${plan.popular
                                     ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30'
                                     : 'bg-blue-500/10 hover:bg-blue-500 border border-blue-500/30 text-blue-400 hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 <FaShoppingCart size={14} />
                                 Buy Now

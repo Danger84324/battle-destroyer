@@ -35,8 +35,12 @@ export default function Dashboard({ toggleTheme, theme }) {
         setTimeout(() => setCopiedId(false), 2000);
     };
 
-    const bg = theme === 'dark' ? 'bg-gray-950' : 'bg-gray-50';
-    const card = theme === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200';
+    const bg = theme === 'dark'
+        ? 'bg-gray-950 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950'
+        : 'bg-gray-50 bg-gradient-to-br from-gray-100 via-gray-50 to-white';
+    const card = theme === 'dark'
+        ? 'bg-gray-900/60 border-gray-700/50 backdrop-blur-xl shadow-xl shadow-black/20'
+        : 'bg-white/70 border-gray-200/60 backdrop-blur-xl shadow-xl shadow-gray-200/50';
     const text = theme === 'dark' ? 'text-white' : 'text-gray-900';
     const sub = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
     const inp = theme === 'dark' ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600';
@@ -114,8 +118,8 @@ export default function Dashboard({ toggleTheme, theme }) {
                                         <button
                                             onClick={(e) => { e.stopPropagation(); copyUserId(); }}
                                             className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border transition-all ${copiedId
-                                                    ? 'bg-green-600/20 border-green-500/40 text-green-400'
-                                                    : 'bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600/20'
+                                                ? 'bg-green-600/20 border-green-500/40 text-green-400'
+                                                : 'bg-blue-600/10 border-blue-500/30 text-blue-400 hover:bg-blue-600/20'
                                                 }`}
                                         >
                                             {copiedId ? <FaCheck size={11} /> : <FaCopy size={11} />}
