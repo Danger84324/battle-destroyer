@@ -101,7 +101,7 @@ export default function Login({ toggleTheme, theme }) {
                 <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-red-800/10 rounded-full blur-2xl" />
                 <div className="relative text-center px-12">
                     <div className="flex justify-center mb-6">
-                        <img src="/logo512.png" alt="Battle Destroyer" className="w-24 h-24 object-contain drop-shadow-lg" />
+                        <img src="/logo512.png" alt="Battle Destroyer" className="w-50 h-50 object-contain drop-shadow-lg" />
                     </div>
                     <h2 className="text-4xl font-black text-white tracking-widest mb-3">BATTLE</h2>
                     <h2 className="text-4xl font-black text-red-500 tracking-widest mb-6">DESTROYER</h2>
@@ -134,8 +134,8 @@ export default function Login({ toggleTheme, theme }) {
                 <div className="w-full max-w-sm">
 
                     <div className="lg:hidden text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-red-600/20 border border-red-600/30 mb-3">
-                            <img src="/logo512.png" alt="Battle Destroyer" className="w-9 h-9 object-contain" />
+                        <div className="inline-flex items-center justify-center w-25 h-25">
+                            <img src="/logo512.png" alt="Battle Destroyer" className="w-20 h-20 object-contain" />
                         </div>
                         <h1 className="text-2xl font-black text-red-500 tracking-widest">BATTLE-DESTROYER</h1>
                     </div>
