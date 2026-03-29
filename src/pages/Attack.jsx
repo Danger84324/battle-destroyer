@@ -4,6 +4,8 @@ import axios from 'axios';
 import { FaGem, FaClipboard, FaExclamationTriangle, FaCheckCircle, FaCrown } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useRef, useCallback } from 'react';
+import TurnstileWidget from '../components/TurnstileWidget';
 
 export default function Attack({ toggleTheme, theme }) {
     const [user, setUser] = useState(null);
@@ -14,6 +16,12 @@ export default function Attack({ toggleTheme, theme }) {
     const [launchError, setLaunchError] = useState('');
     const navigate = useNavigate();
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const [captchaReady, setCaptchaReady] = useState(false);
+    const captchaTokenRef = useRef('');
+    const captchaIssuedRef = useRef(null);
+    const expiryTimerRef = useRef(null);
+    const turnstileRef = useRef(null);
+    const TOKEN_MAX_AGE_MS = 270_000;
 
     // ── Load user ───────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -31,6 +39,24 @@ export default function Attack({ toggleTheme, theme }) {
         setErrors({ ...errors, [e.target.name]: '' });
         setLaunchError('');
     };
+
+    const resetCaptcha = useCallback(() => {
+        captchaTokenRef.current = '';
+        captchaIssuedRef.current = null;
+        setCaptchaReady(false);
+        clearTimeout(expiryTimerRef.current);
+        turnstileRef.current?.reset();
+    }, []);
+
+    const handleVerify = useCallback((token) => {
+        captchaTokenRef.current = token;
+        captchaIssuedRef.current = Date.now();
+        setCaptchaReady(true);
+        clearTimeout(expiryTimerRef.current);
+        expiryTimerRef.current = setTimeout(resetCaptcha, TOKEN_MAX_AGE_MS);
+    }, [resetCaptcha]);
+
+    useEffect(() => () => clearTimeout(expiryTimerRef.current), []);
 
     // ── Client-side validation (mirrors backend) ────────────────────────────────
     const validate = () => {
@@ -58,6 +84,20 @@ export default function Attack({ toggleTheme, theme }) {
         setLaunchError('');
         setLaunched(false);
 
+        // ✅ Captcha check FIRST
+        const captchaToken = captchaTokenRef.current;
+        const issuedAt = captchaIssuedRef.current;
+
+        if (!captchaToken) {
+            setLaunchError('Please complete the CAPTCHA before launching.');
+            return;
+        }
+        if (!issuedAt || Date.now() - issuedAt > TOKEN_MAX_AGE_MS) {
+            resetCaptcha();
+            setLaunchError('CAPTCHA expired. Please solve it again.');
+            return;
+        }
+
         const errs = validate();
         if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
@@ -66,25 +106,23 @@ export default function Attack({ toggleTheme, theme }) {
             const token = localStorage.getItem('token');
             const { data } = await axios.post(
                 `${API_URL}/api/panel/attack`,
-                { ip: form.ip, port: form.port, duration: form.duration },
+                { ip: form.ip, port: form.port, duration: form.duration, captchaToken }, // ✅ send token
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            // Update local credit count from server response (source of truth)
             setUser(prev => ({ ...prev, credits: data.credits }));
             localStorage.setItem('user', JSON.stringify({ ...user, credits: data.credits }));
-
             setLaunched(true);
             setTimeout(() => setLaunched(false), 4000);
+            resetCaptcha(); // ✅ reset after successful launch
 
         } catch (err) {
             const msg = err.response?.data?.message || 'Launch failed. Please try again.';
             setLaunchError(msg);
-
-            // If server says credits changed (e.g. ran out), sync locally
             if (err.response?.data?.credits !== undefined) {
                 setUser(prev => ({ ...prev, credits: err.response.data.credits }));
             }
+            resetCaptcha(); // ✅ reset on error too
         } finally {
             setLaunching(false);
         }
@@ -241,20 +279,44 @@ export default function Attack({ toggleTheme, theme }) {
                                     </div>
                                 )}
 
-                                {/* Launch Button */}
+                                {/* ✅ CAPTCHA — add this just above the Launch Button */}
+                                <div>
+                                    <TurnstileWidget
+                                        ref={turnstileRef}
+                                        onVerify={handleVerify}
+                                        onExpire={resetCaptcha}
+                                        onError={resetCaptcha}
+                                    />
+                                    {!captchaReady && (
+                                        <p className="text-yellow-500 text-xs mt-1.5 flex items-center gap-1">
+                                            ⏳ Complete the CAPTCHA to enable launch
+                                        </p>
+                                    )}
+                                    {captchaReady && (
+                                        <p className="text-green-500 text-xs mt-1.5 flex items-center gap-1">
+                                            ✅ CAPTCHA verified — ready to launch
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Launch Button — add captchaReady to disabled */}
                                 <button
                                     onClick={launch}
-                                    disabled={launching || user.credits < 1}
+                                    disabled={launching || user.credits < 1 || !captchaReady}  {/* ✅ add !captchaReady */}
                                     className={`w-full py-4 rounded-xl font-black text-base tracking-wider transition-all flex items-center justify-center gap-3 ${user.credits < 1
-                                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                        : launching
-                                            ? 'bg-red-700 text-white cursor-wait'
-                                            : 'bg-red-600 hover:bg-red-700 active:scale-95 text-white shadow-xl shadow-red-900/30'
+                                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                            : !captchaReady
+                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'  // ✅ new state
+                                                : launching
+                                                    ? 'bg-red-700 text-white cursor-wait'
+                                                    : 'bg-red-600 hover:bg-red-700 active:scale-95 text-white shadow-xl shadow-red-900/30'
                                         }`}>
                                     {launching ? (
                                         <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Launching Attack...</>
                                     ) : user.credits < 1 ? (
                                         '⛔ Insufficient Credits'
+                                    ) : !captchaReady ? (
+                                        '🔒 Complete CAPTCHA to Launch'   // ✅ new state
                                     ) : (
                                         '🚀 Launch Attack'
                                     )}
