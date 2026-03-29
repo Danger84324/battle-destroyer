@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+import Login     from './pages/Login';
+import Signup    from './pages/Signup';
 import Dashboard from './pages/Dashboard';
-import Attack from './pages/Attack';
+import Attack    from './pages/Attack';
+import Contact   from './pages/Contact';   // ← ADD THIS
 
 function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
@@ -19,11 +20,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to={token() ? "/dashboard" : "/login"} />} />
+        <Route path="/"          element={<Navigate to={token() ? "/dashboard" : "/login"} />} />
         <Route path="/login"     element={<Login     toggleTheme={toggleTheme} theme={theme} />} />
         <Route path="/signup"    element={<Signup    toggleTheme={toggleTheme} theme={theme} />} />
         <Route path="/dashboard" element={token() ? <Dashboard toggleTheme={toggleTheme} theme={theme} /> : <Navigate to="/login" />} />
         <Route path="/attack"    element={token() ? <Attack    toggleTheme={toggleTheme} theme={theme} /> : <Navigate to="/login" />} />
+        <Route path="/contact"   element={token() ? <Contact   toggleTheme={toggleTheme} theme={theme} /> : <Navigate to="/login" />} />  {/* ← ADD THIS */}
         <Route path="*"          element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

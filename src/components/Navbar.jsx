@@ -13,17 +13,19 @@ export default function Navbar({ toggleTheme, theme }) {
         navigate('/login');
     };
 
+    // In the navLinks array, add:
     const navLinks = [
         { path: '/dashboard', label: 'Dashboard', icon: FaBolt },
         { path: '/attack', label: 'Attack', icon: FaBullseye },
+        { path: '/contact', label: 'Buy Credits', icon: FaGem },
     ];
 
     const isActive = (path) => location.pathname === path;
 
     return (
         <nav className={`sticky top-0 z-50 border-b backdrop-blur-md transition-colors duration-300 ${theme === 'dark'
-                ? 'bg-gray-950/90 border-gray-800'
-                : 'bg-white/90 border-gray-200'
+            ? 'bg-gray-950/90 border-gray-800'
+            : 'bg-white/90 border-gray-200'
             }`}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
                 <div className="flex items-center justify-between h-16">
@@ -45,10 +47,10 @@ export default function Navbar({ toggleTheme, theme }) {
                         {navLinks.map(link => (
                             <Link key={link.path} to={link.path}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive(link.path)
-                                        ? 'bg-red-600/20 text-red-400 border border-red-600/30'
-                                        : theme === 'dark'
-                                            ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                                    ? 'bg-red-600/20 text-red-400 border border-red-600/30'
+                                    : theme === 'dark'
+                                        ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                                     }`}>
                                 <link.icon size={16} />
                                 {link.label}
@@ -61,8 +63,8 @@ export default function Navbar({ toggleTheme, theme }) {
                         {/* Theme toggle */}
                         <button onClick={toggleTheme}
                             className={`w-9 h-9 rounded-lg flex items-center justify-center text-base transition-all ${theme === 'dark'
-                                    ? 'bg-gray-800 hover:bg-gray-700 text-yellow-400'
-                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                                ? 'bg-gray-800 hover:bg-gray-700 text-yellow-400'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
                                 }`}>
                             {theme === 'dark' ? '☀️' : '🌙'}
                         </button>
@@ -117,10 +119,10 @@ export default function Navbar({ toggleTheme, theme }) {
                         <Link key={link.path} to={link.path}
                             onClick={() => setMenuOpen(false)}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive(link.path)
-                                    ? 'bg-red-600/20 text-red-400'
-                                    : theme === 'dark'
-                                        ? 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                                ? 'bg-red-600/20 text-red-400'
+                                : theme === 'dark'
+                                    ? 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
                                 }`}>
                             <link.icon size={16} />
                             {link.label}
