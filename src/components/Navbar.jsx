@@ -23,9 +23,9 @@ export default function Navbar({ toggleTheme, theme }) {
     const isActive = (path) => location.pathname === path;
 
     return (
-        <nav className={`sticky top-0 z-50 border-b backdrop-blur-md transition-colors duration-300 backdrop-blur-xl ${theme === 'dark'
-            ? 'bg-gray-950/90 border-gray-800'
-            : 'bg-white/90 border-gray-200'
+        <nav className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors duration-300 ${theme === 'dark'
+            ? 'bg-gray-950/60 border-gray-800/60'
+            : 'bg-white/60 border-gray-200/60'
             }`}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
                 <div className="flex items-center justify-between h-16">
@@ -99,8 +99,7 @@ export default function Navbar({ toggleTheme, theme }) {
 
             {/* Mobile Menu */}
             {menuOpen && (
-                <div className={`md:hidden border-t px-4 py-3 space-y-1 ${theme === 'dark' ? 'bg-gray-950 border-gray-800' : 'bg-white border-gray-200'
-                    }`}>
+                <div className={`md:hidden border-t px-4 py-3 space-y-1 backdrop-blur-xl ${theme === 'dark' ? 'bg-gray-950/60 border-gray-800/60' : 'bg-white/60 border-gray-200/60'}`}>
                     {/* User info mobile */}
                     <div className={`flex items-center gap-3 px-3 py-3 rounded-xl mb-2 ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'
                         }`}>
