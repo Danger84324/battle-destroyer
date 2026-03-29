@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaGem, FaClipboard, FaExclamationTriangle, FaCheckCircle, FaCrown } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 export default function Attack({ toggleTheme, theme }) {
@@ -238,10 +239,10 @@ export default function Attack({ toggleTheme, theme }) {
                                     onClick={launch}
                                     disabled={launching || user.credits < 1}
                                     className={`w-full py-4 rounded-xl font-black text-base tracking-wider transition-all flex items-center justify-center gap-3 ${user.credits < 1
-                                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                            : launching
-                                                ? 'bg-red-700 text-white cursor-wait'
-                                                : 'bg-red-600 hover:bg-red-700 active:scale-95 text-white shadow-xl shadow-red-900/30'
+                                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                        : launching
+                                            ? 'bg-red-700 text-white cursor-wait'
+                                            : 'bg-red-600 hover:bg-red-700 active:scale-95 text-white shadow-xl shadow-red-900/30'
                                         }`}>
                                     {launching ? (
                                         <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Launching Attack...</>
@@ -280,6 +281,15 @@ export default function Attack({ toggleTheme, theme }) {
                                     style={{ width: `${Math.min((user.credits / 10) * 100, 100)}%` }}
                                 />
                             </div>
+
+                            {/* ✅ ADD THIS */}
+                            <Link
+                                to="/contact"
+                                className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600/10 hover:bg-red-600 border border-red-600/30 text-red-400 hover:text-white text-xs font-bold transition-all"
+                            >
+                                <FaGem size={12} />
+                                Buy Credits
+                            </Link>
                         </div>
 
                         {/* Rules */}
