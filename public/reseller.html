@@ -125,10 +125,6 @@
     <p>Login with your reseller credentials to manage credits</p>
     <div id="login-error"></div>
     <div class="field">
-      <label>API Base URL</label>
-      <input id="api-url" type="text" value="https://backend-battle-destroyer.onrender.com" placeholder="https://your-api.com"/>
-    </div>
-    <div class="field">
       <label>Username or Email</label>
       <input id="r-username" type="text" placeholder="your_username"/>
     </div>
@@ -249,24 +245,24 @@
 <div id="toast"></div>
 
 <script>
-let API = '', TOKEN = '', resellerData = null;
+const API = window.location.origin;
+let TOKEN = '', resellerData = null;
 const history = []; // in-session activity log
 
 // ── LOGIN ──────────────────────────────────────────────────────────────────────
 async function doLogin() {
-  const url  = document.getElementById('api-url').value.trim().replace(/\/$/, '');
-  const user = document.getElementById('r-username').value.trim();
-  const pass = document.getElementById('r-password').value;
+  const user  = document.getElementById('r-username').value.trim();
+  const pass  = document.getElementById('r-password').value;
   const errEl = document.getElementById('login-error');
   errEl.style.display = 'none';
 
-  if (!url || !user || !pass) { showLoginError('All fields are required.'); return; }
+  if (!user || !pass) { showLoginError('Username and password are required.'); return; }
 
   const btn = document.getElementById('login-btn');
   btn.textContent = '⏳ Signing in…'; btn.disabled = true;
 
   try {
-    const r = await fetch(`${url}/api/reseller/login`, {
+    const r = await fetch(`${API}/api/reseller/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: user, password: pass }),
@@ -274,7 +270,6 @@ async function doLogin() {
     const data = await r.json();
     if (!r.ok) throw new Error(data.message || 'Login failed');
 
-    API   = url;
     TOKEN = data.token;
     resellerData = data.reseller;
     initApp();
@@ -289,7 +284,7 @@ function showLoginError(msg) {
   el.textContent = '⚠ ' + msg; el.style.display = 'block';
 }
 function logout() {
-  API = ''; TOKEN = ''; resellerData = null;
+  TOKEN = ''; resellerData = null;
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('r-password').value = '';

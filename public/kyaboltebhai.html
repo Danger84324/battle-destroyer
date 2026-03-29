@@ -141,10 +141,6 @@
     <p>Battle Destroyer — Management Console</p>
     <div id="login-error"></div>
     <div class="field">
-      <label>API Base URL</label>
-      <input id="api-url" type="text" value="https://backend-battle-destroyer.onrender.com" placeholder="https://your-api.com"/>
-    </div>
-    <div class="field">
       <label>Admin Secret</label>
       <input id="admin-secret" type="password" placeholder="Your ADMIN_SECRET value"/>
     </div>
@@ -157,7 +153,6 @@
   <header>
     <span class="logo">⚔ BATTLE DESTROYER ADMIN</span>
     <div class="hright">
-      <span class="api-badge" id="api-display"></span>
       <button class="btn btn-ghost" onclick="logout()">Logout</button>
     </div>
   </header>
@@ -340,9 +335,10 @@
 <div id="toast"></div>
 
 <script>
-let API = '', SECRET = '';
+let API = '', TOKEN = '';
 let currentPage = 1, currentRPage = 1;
 let searchTimer = null, rsearchTimer = null;
+let heartbeatInterval = null;
 
 // ── TAB SWITCHING ──────────────────────────────────────────────────────────────
 function switchTab(tab) {
@@ -353,6 +349,8 @@ function switchTab(tab) {
 }
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
+// Exchanges the raw ADMIN_SECRET for a one-time session token.
+// Issuing a new token immediately revokes any token held by another device.
 async function doLogin() {
   const url    = document.getElementById('api-url').value.trim().replace(/\/$/, '');
   const secret = document.getElementById('admin-secret').value.trim();
@@ -360,12 +358,19 @@ async function doLogin() {
   errEl.style.display = 'none';
   if (!url || !secret) { showLoginError('Both fields are required.'); return; }
   try {
-    const r = await fetch(`${url}/api/admin/stats`, { headers: { 'x-admin-secret': secret } });
-    if (!r.ok) throw new Error('Invalid secret or unreachable API');
-    API = url; SECRET = secret;
+    const r = await fetch(`${url}/api/admin/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.message || 'Login failed');
+    API   = url;
+    TOKEN = data.token;
     document.getElementById('api-display').textContent = url.replace('https://','');
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
+    startHeartbeat();
     loadStats(); loadUsers(1);
   } catch(e) { showLoginError(e.message); }
 }
@@ -373,19 +378,56 @@ function showLoginError(msg) {
   const el = document.getElementById('login-error');
   el.textContent = '⚠ ' + msg; el.style.display = 'block';
 }
-function logout() {
-  API = ''; SECRET = '';
+async function logout() {
+  if (API && TOKEN) {
+    try { await fetch(`${API}/api/admin/session`, { method: 'DELETE', headers: { 'x-admin-token': TOKEN } }); } catch {}
+  }
+  clearInterval(heartbeatInterval);
+  API = ''; TOKEN = '';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
 }
 
+// ── HEARTBEAT — detects if another device stole the session ───────────────────
+function startHeartbeat() {
+  clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(async () => {
+    try {
+      const r = await fetch(`${API}/api/admin/session/check`, { headers: { 'x-admin-token': TOKEN } });
+      if (!r.ok) {
+        const data = await r.json();
+        clearInterval(heartbeatInterval);
+        forceLogout(data.message === 'SESSION_EXPIRED'
+          ? 'Your session expired. Please log in again.'
+          : '⚠ Another device logged in as admin. You have been signed out.');
+      }
+    } catch {}
+  }, 15000); // poll every 15 seconds
+}
+function forceLogout(reason) {
+  clearInterval(heartbeatInterval);
+  API = ''; TOKEN = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  const el = document.getElementById('login-error');
+  el.textContent = reason; el.style.display = 'block';
+}
+
 // ── API HELPER ────────────────────────────────────────────────────────────────
 async function api(path, method = 'GET', body) {
-  const opts = { method, headers: { 'x-admin-secret': SECRET, 'Content-Type': 'application/json' } };
+  const opts = { method, headers: { 'x-admin-token': TOKEN, 'Content-Type': 'application/json' } };
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch(API + path, opts);
   const data = await r.json();
-  if (!r.ok) throw new Error(data.message || 'Request failed');
+  if (!r.ok) {
+    if (r.status === 401 && (data.message === 'SESSION_INVALIDATED' || data.message === 'SESSION_EXPIRED')) {
+      forceLogout(data.message === 'SESSION_EXPIRED'
+        ? 'Your session expired. Please log in again.'
+        : '⚠ Another device logged in as admin. You have been signed out.');
+      throw new Error('Session ended');
+    }
+    throw new Error(data.message || 'Request failed');
+  }
   return data;
 }
 
