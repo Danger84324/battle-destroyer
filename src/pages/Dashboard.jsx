@@ -19,7 +19,7 @@ export default function Dashboard({ toggleTheme, theme }) {
       setUser(r.data);
       localStorage.setItem('user', JSON.stringify(r.data));
     }).catch(() => { localStorage.clear(); navigate('/login'); });
-  }, [navigate]);
+  }, [navigate,API_URL]);
 
   const copyReferral = () => {
     const link = `${window.location.origin}/signup?ref=${user.referralCode}`;
