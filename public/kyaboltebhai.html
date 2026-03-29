@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://backend-battle-destroyer.onrender.com; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
 <title>Battle Destroyer — Admin</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -12,8 +13,6 @@
     --blue:#3182ce;--purple:#805ad5;--text:#e2e8f0;--muted:#718096;--input:#1a1a26;
   }
   body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh}
-
-  /* ── LOGIN SCREEN ── */
   #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
   .login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px;width:100%;max-width:380px}
   .login-box h1{font-size:22px;font-weight:800;color:var(--red);margin-bottom:4px}
@@ -22,50 +21,38 @@
   .field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
   .field input{width:100%;background:var(--input);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
   .field input:focus{border-color:var(--red)}
+  .field-error{color:#fc8181;font-size:12px;margin-top:4px;display:none}
   .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;border:none;transition:all .2s}
   .btn-red{background:var(--red);color:#fff}.btn-red:hover{background:var(--red2)}
   .btn-green{background:var(--green);color:#fff}.btn-green:hover{filter:brightness(1.1)}
-  .btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{filter:brightness(1.1)}
   .btn-purple{background:var(--purple);color:#fff}.btn-purple:hover{filter:brightness(1.1)}
   .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--red);color:var(--red)}
   .btn-danger{background:#742a2a;color:#feb2b2;border:1px solid #9b2c2c}.btn-danger:hover{background:#9b2c2c}
   .btn-full{width:100%;justify-content:center}
   #login-error{color:#fc8181;font-size:13px;margin-bottom:12px;display:none}
-
-  /* ── MAIN LAYOUT ── */
   #app{display:none;flex-direction:column;min-height:100vh}
   header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-  header .logo{font-size:16px;font-weight:900;color:var(--red);letter-spacing:.1em}
-  header .logo-short{display:none;font-size:15px;font-weight:900;color:var(--red)}
-  header .hright{display:flex;align-items:center;gap:12px}
+  .logo{font-size:16px;font-weight:900;color:var(--red);letter-spacing:.1em}
+  .logo-short{display:none;font-size:15px;font-weight:900;color:var(--red)}
+  .hright{display:flex;align-items:center;gap:12px}
   main{flex:1;padding:24px;max-width:1400px;margin:0 auto;width:100%}
-
-  /* ── TABS ── */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+  .stat-card .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
+  .stat-card .value{font-size:28px;font-weight:900}
+  .stat-card.red .value{color:var(--red)}.stat-card.green .value{color:var(--green)}
+  .stat-card.blue .value{color:var(--blue)}.stat-card.yellow .value{color:var(--yellow)}
+  .stat-card.purple .value{color:var(--purple)}
   .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content}
   .tab{padding:8px 20px;border-radius:9px;cursor:pointer;font-weight:600;font-size:13px;color:var(--muted);transition:all .2s;border:none;background:none}
   .tab.active{background:var(--red);color:#fff}
   .tab:hover:not(.active){color:var(--text);background:var(--border)}
   .tab-pane{display:none}.tab-pane.active{display:block}
-
-  /* ── STATS ── */
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
-  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
-  .stat-card .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
-  .stat-card .value{font-size:28px;font-weight:900}
-  .stat-card.red .value{color:var(--red)}
-  .stat-card.green .value{color:var(--green)}
-  .stat-card.blue .value{color:var(--blue)}
-  .stat-card.yellow .value{color:var(--yellow)}
-  .stat-card.purple .value{color:var(--purple)}
-
-  /* ── TOOLBAR ── */
   .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
   .search-wrap{position:relative;flex:1;min-width:160px}
   .search-wrap input{width:100%;background:var(--input);border:1px solid var(--border);border-radius:10px;padding:9px 14px 9px 36px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s}
   .search-wrap input:focus{border-color:var(--red)}
-  .search-wrap .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px}
-
-  /* ── TABLE ── */
+  .search-wrap .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}
   .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{width:100%;border-collapse:collapse;min-width:600px}
   thead th{background:var(--surface);padding:10px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
@@ -82,19 +69,13 @@
   .actions{display:flex;gap:6px}
   .icon-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:5px 8px;cursor:pointer;color:var(--muted);font-size:13px;transition:all .2s}
   .icon-btn:hover{border-color:var(--red);color:var(--red)}
-  .icon-btn.edit:hover{border-color:var(--blue);color:var(--blue)}
-  .icon-btn.block:hover{border-color:var(--yellow);color:var(--yellow)}
-  .icon-btn.del:hover{border-color:var(--red);color:var(--red)}
-
-  /* ── PAGINATION ── */
+  .icon-btn.edit-btn:hover{border-color:var(--blue);color:var(--blue)}
+  .icon-btn.block-btn:hover{border-color:var(--yellow);color:var(--yellow)}
   .pagination{display:flex;align-items:center;justify-content:space-between;margin-top:16px;flex-wrap:wrap;gap:8px}
   .pagination .info{color:var(--muted);font-size:13px}
   .pages{display:flex;gap:6px;flex-wrap:wrap}
   .page-btn{background:var(--input);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--text);font-size:13px;transition:all .2s}
   .page-btn:hover,.page-btn.active{background:var(--red);border-color:var(--red);color:#fff}
-  .page-btn:disabled{opacity:.4;cursor:not-allowed}
-
-  /* ── MODAL ── */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
   .overlay.open{display:flex}
   .modal{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
@@ -105,7 +86,7 @@
   .modal-body{padding:20px 24px}
   .modal-footer{padding:0 24px 20px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--input);border:1px solid var(--border);border-radius:10px;padding:10px 14px}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--input);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-top:8px}
   .toggle-row label{font-size:13px;font-weight:600}
   .toggle{position:relative;width:36px;height:20px}
   .toggle input{opacity:0;width:0;height:0}
@@ -113,14 +94,11 @@
   .slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
   input:checked+.slider{background:var(--green)}
   input:checked+.slider:before{transform:translateX(16px)}
-
-  /* ── TOAST ── */
   #toast{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px}
   .toast-msg{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:8px;animation:slideIn .2s ease;max-width:300px}
   .toast-msg.success{border-color:var(--green);color:var(--green)}
   .toast-msg.error{border-color:var(--red);color:#fc8181}
   @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
-
   .empty{text-align:center;padding:48px;color:var(--muted)}
   .loading{text-align:center;padding:32px;color:var(--muted)}
   .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
@@ -129,61 +107,36 @@
   .danger-zone h4{color:#fc8181;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
   .info-box{background:var(--input);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6}
   .info-box strong{color:var(--text)}
-  .section-divider{border:none;border-top:1px solid var(--border);margin:16px 0}
-
-  /* ── RESPONSIVE ── */
+  .confirm-body{padding:20px 24px}
+  .confirm-body p{color:var(--muted);margin-bottom:14px;line-height:1.6;font-size:13px}
+  .confirm-body label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-bottom:6px}
+  .confirm-body input{width:100%;background:var(--input);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
+  .confirm-body input:focus{border-color:var(--red)}
   @media(max-width:768px){
     header{padding:0 16px}
-    header .logo{display:none}
-    header .logo-short{display:block}
+    .logo{display:none}.logo-short{display:block}
     main{padding:16px}
-
     .stats{grid-template-columns:repeat(2,1fr);gap:8px}
-    .stat-card{padding:12px 14px}
-    .stat-card .value{font-size:22px}
-
-    .tabs{width:100%}
-    .tab{flex:1;padding:8px 10px;font-size:12px;text-align:center}
-
-    .toolbar{gap:8px}
+    .stat-card{padding:12px 14px}.stat-card .value{font-size:22px}
+    .tabs{width:100%}.tab{flex:1;padding:8px 10px;font-size:12px;text-align:center}
     .toolbar .btn{padding:9px 12px;font-size:12px}
-
-    .table-wrap{border-radius:10px}
-    /* hide less important columns on mobile */
-    table thead th:nth-child(3),
-    table tbody td:nth-child(3){display:none} /* User ID */
-    table thead th:nth-child(5),
-    table tbody td:nth-child(5){display:none} /* Referrals */
-    table thead th:nth-child(7),
-    table tbody td:nth-child(7){display:none} /* Joined / Created */
-
+    table thead th:nth-child(3),table tbody td:nth-child(3){display:none}
+    table thead th:nth-child(5),table tbody td:nth-child(5){display:none}
+    table thead th:nth-child(7),table tbody td:nth-child(7){display:none}
     .row2{grid-template-columns:1fr}
-
-    .modal-footer{flex-direction:column-reverse}
-    .modal-footer .btn{width:100%;justify-content:center}
-
+    .modal-footer{flex-direction:column-reverse}.modal-footer .btn{width:100%;justify-content:center}
     .pagination{flex-direction:column;align-items:flex-start}
-
-    #toast{bottom:16px;right:16px;left:16px}
-    .toast-msg{max-width:100%}
+    #toast{bottom:16px;right:16px;left:16px}.toast-msg{max-width:100%}
   }
-
   @media(max-width:480px){
     .login-box{padding:28px 20px}
-    .stat-card .label{font-size:10px}
     .tab{font-size:11px;padding:7px 8px}
-
-    /* hide email on very small screens too */
-    table thead th:nth-child(2),
-    table tbody td:nth-child(2){display:none}
-
-    .btn{padding:9px 12px}
+    table thead th:nth-child(2),table tbody td:nth-child(2){display:none}
   }
 </style>
 </head>
 <body>
 
-<!-- ── LOGIN ── -->
 <div id="login-screen">
   <div class="login-box">
     <h1>⚔ ADMIN PANEL</h1>
@@ -191,278 +144,270 @@
     <div id="login-error"></div>
     <div class="field">
       <label>Admin Secret</label>
-      <input id="admin-secret" type="password" placeholder="Your ADMIN_SECRET value"/>
+      <input id="admin-secret" type="password" placeholder="Your ADMIN_SECRET value" autocomplete="current-password"/>
     </div>
-    <button class="btn btn-red btn-full" onclick="doLogin()">🔐 Login to Admin</button>
+    <button class="btn btn-red btn-full" id="login-btn">🔐 Login to Admin</button>
   </div>
 </div>
 
-<!-- ── MAIN APP ── -->
 <div id="app">
   <header>
     <span class="logo">⚔ BATTLE DESTROYER ADMIN</span>
     <span class="logo-short">⚔ ADMIN</span>
     <div class="hright">
-      <button class="btn btn-ghost" onclick="logout()">Logout</button>
+      <button class="btn btn-ghost" id="logout-btn">Logout</button>
     </div>
   </header>
-
   <main>
-    <div class="stats" id="stats-row">
+    <div class="stats">
       <div class="stat-card red"><div class="label">Total Users</div><div class="value" id="s-total">—</div></div>
       <div class="stat-card green"><div class="label">Pro Users</div><div class="value" id="s-pro">—</div></div>
       <div class="stat-card blue"><div class="label">Have Credits</div><div class="value" id="s-credits">—</div></div>
       <div class="stat-card yellow"><div class="label">Today</div><div class="value" id="s-today">—</div></div>
       <div class="stat-card purple"><div class="label">Resellers</div><div class="value" id="s-resellers">—</div></div>
     </div>
-
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('users')">👥 Users</button>
-      <button class="tab" onclick="switchTab('resellers')">🤝 Resellers</button>
+      <button class="tab active" data-tab="users">👥 Users</button>
+      <button class="tab" data-tab="resellers">🤝 Resellers</button>
     </div>
-
-    <!-- ── USERS TAB ── -->
     <div class="tab-pane active" id="tab-users">
       <div class="toolbar">
-        <div class="search-wrap">
-          <span class="ico">🔍</span>
-          <input id="search-input" type="text" placeholder="Search username, email or userId…" oninput="debounceSearch()"/>
-        </div>
-        <button class="btn btn-red" onclick="loadUsers(1)">Refresh</button>
+        <div class="search-wrap"><span class="ico">🔍</span><input id="search-input" type="text" placeholder="Search username, email or userId…" maxlength="100"/></div>
+        <button class="btn btn-red" id="refresh-users-btn">Refresh</button>
       </div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>User</th><th>Email</th><th>User ID</th><th>Credits</th>
-              <th>Referrals</th><th>Pro</th><th>Joined</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="user-tbody">
-            <tr><td colspan="8" class="loading"><span class="spinner"></span>Loading…</td></tr>
-          </tbody>
+          <thead><tr><th>User</th><th>Email</th><th>User ID</th><th>Credits</th><th>Referrals</th><th>Pro</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody id="user-tbody"><tr><td colspan="8" class="loading"><span class="spinner"></span>Loading…</td></tr></tbody>
         </table>
       </div>
-      <div class="pagination">
-        <span class="info" id="page-info"></span>
-        <div class="pages" id="pages"></div>
-      </div>
+      <div class="pagination"><span class="info" id="page-info"></span><div class="pages" id="pages"></div></div>
     </div>
-
-    <!-- ── RESELLERS TAB ── -->
     <div class="tab-pane" id="tab-resellers">
       <div class="toolbar">
-        <div class="search-wrap">
-          <span class="ico">🔍</span>
-          <input id="rsearch-input" type="text" placeholder="Search resellers…" oninput="debounceRSearch()"/>
-        </div>
-        <button class="btn btn-purple" onclick="openCreateReseller()">➕ New</button>
-        <button class="btn btn-red" onclick="loadResellers(1)">Refresh</button>
+        <div class="search-wrap"><span class="ico">🔍</span><input id="rsearch-input" type="text" placeholder="Search resellers…" maxlength="100"/></div>
+        <button class="btn btn-purple" id="new-reseller-btn">➕ New</button>
+        <button class="btn btn-red" id="refresh-resellers-btn">Refresh</button>
       </div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Username</th><th>Email</th><th>Credits</th><th>Total Given</th>
-              <th>Status</th><th>Last Login</th><th>Created</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="reseller-tbody">
-            <tr><td colspan="8" class="loading"><span class="spinner"></span>Loading…</td></tr>
-          </tbody>
+          <thead><tr><th>Username</th><th>Email</th><th>Credits</th><th>Total Given</th><th>Status</th><th>Last Login</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="reseller-tbody"><tr><td colspan="8" class="loading"><span class="spinner"></span>Loading…</td></tr></tbody>
         </table>
       </div>
-      <div class="pagination">
-        <span class="info" id="rpage-info"></span>
-        <div class="pages" id="rpages"></div>
-      </div>
+      <div class="pagination"><span class="info" id="rpage-info"></span><div class="pages" id="rpages"></div></div>
     </div>
   </main>
 </div>
 
-<!-- ── EDIT USER MODAL ── -->
-<div class="overlay" id="edit-modal">
+<!-- EDIT USER MODAL -->
+<div class="overlay" id="edit-modal" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="modal-header">
-      <h2>✏️ Edit User</h2>
-      <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
-    </div>
+    <div class="modal-header"><h2>✏️ Edit User</h2><button class="modal-close" data-close="edit-modal">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="edit-id"/>
       <div class="row2">
-        <div class="field"><label>Username</label><input id="edit-username" type="text"/></div>
-        <div class="field"><label>Email</label><input id="edit-email" type="email"/></div>
+        <div class="field"><label>Username</label><input id="edit-username" type="text" maxlength="50"/><div class="field-error" id="err-username"></div></div>
+        <div class="field"><label>Email</label><input id="edit-email" type="email" maxlength="100"/><div class="field-error" id="err-email"></div></div>
       </div>
       <div class="row2">
-        <div class="field"><label>Credits</label><input id="edit-credits" type="number" min="0"/></div>
-        <div class="field"><label>Referral Count</label><input id="edit-refcount" type="number" min="0"/></div>
+        <div class="field"><label>Credits</label><input id="edit-credits" type="number" min="0" max="999999"/><div class="field-error" id="err-credits"></div></div>
+        <div class="field"><label>Referral Count</label><input id="edit-refcount" type="number" min="0" max="999999"/></div>
       </div>
-      <div class="field"><label>New Password <span style="color:var(--muted);font-weight:400;text-transform:none">(leave blank to keep)</span></label><input id="edit-password" type="password" placeholder="Min 8 characters"/></div>
-      <div class="toggle-row" style="margin-top:4px">
-        <label>Pro Account</label>
-        <label class="toggle"><input type="checkbox" id="edit-ispro"/><span class="slider"></span></label>
-      </div>
-      <div class="toggle-row" style="margin-top:8px">
-        <label>Credit Given</label>
-        <label class="toggle"><input type="checkbox" id="edit-creditgiven"/><span class="slider"></span></label>
-      </div>
-      <div class="danger-zone">
-        <h4>⚠ Danger Zone</h4>
-        <button class="btn btn-danger" onclick="deleteUser()">🗑 Delete This User</button>
-      </div>
+      <div class="field"><label>New Password <span style="color:var(--muted);font-weight:400;text-transform:none">(blank = keep)</span></label><input id="edit-password" type="password" placeholder="Min 8 characters" maxlength="128" autocomplete="new-password"/><div class="field-error" id="err-password"></div></div>
+      <div class="toggle-row"><label>Pro Account</label><label class="toggle"><input type="checkbox" id="edit-ispro"/><span class="slider"></span></label></div>
+      <div class="toggle-row"><label>Credit Given</label><label class="toggle"><input type="checkbox" id="edit-creditgiven"/><span class="slider"></span></label></div>
+      <div class="danger-zone"><h4>⚠ Danger Zone</h4><button class="btn btn-danger" id="delete-user-btn">🗑 Delete This User</button></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('edit-modal')">Cancel</button>
-      <button class="btn btn-green" onclick="saveUser()">💾 Save Changes</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-close="edit-modal">Cancel</button><button class="btn btn-green" id="save-user-btn">💾 Save Changes</button></div>
   </div>
 </div>
 
-<!-- ── CREATE RESELLER MODAL ── -->
-<div class="overlay" id="create-reseller-modal">
+<!-- CREATE RESELLER MODAL -->
+<div class="overlay" id="create-reseller-modal" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="modal-header">
-      <h2>➕ Create Reseller</h2>
-      <button class="modal-close" onclick="closeModal('create-reseller-modal')">✕</button>
-    </div>
+    <div class="modal-header"><h2>➕ Create Reseller</h2><button class="modal-close" data-close="create-reseller-modal">✕</button></div>
     <div class="modal-body">
-      <div class="info-box">
-        Resellers can <strong>search users</strong> and <strong>give credits</strong> (auto-upgrades to Pro).<br>
-        They <strong>cannot</strong> delete users, change passwords, or access the database.
+      <div class="info-box">Resellers can <strong>search users</strong> and <strong>give credits</strong>.<br>They <strong>cannot</strong> delete users or access the database.</div>
+      <div class="row2">
+        <div class="field"><label>Username</label><input id="cr-username" type="text" placeholder="reseller1" maxlength="50"/></div>
+        <div class="field"><label>Email</label><input id="cr-email" type="email" placeholder="reseller@example.com" maxlength="100"/></div>
       </div>
       <div class="row2">
-        <div class="field"><label>Username</label><input id="cr-username" type="text" placeholder="reseller1"/></div>
-        <div class="field"><label>Email</label><input id="cr-email" type="email" placeholder="reseller@example.com"/></div>
-      </div>
-      <div class="row2">
-        <div class="field"><label>Password</label><input id="cr-password" type="password" placeholder="Min 8 characters"/></div>
-        <div class="field"><label>Starting Credits</label><input id="cr-credits" type="number" min="0" value="0"/></div>
+        <div class="field"><label>Password</label><input id="cr-password" type="password" placeholder="Min 8 characters" maxlength="128" autocomplete="new-password"/></div>
+        <div class="field"><label>Starting Credits</label><input id="cr-credits" type="number" min="0" max="999999" value="0"/></div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('create-reseller-modal')">Cancel</button>
-      <button class="btn btn-purple" onclick="createReseller()">✅ Create Reseller</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-close="create-reseller-modal">Cancel</button><button class="btn btn-purple" id="create-reseller-btn">✅ Create Reseller</button></div>
   </div>
 </div>
 
-<!-- ── EDIT RESELLER MODAL ── -->
-<div class="overlay" id="edit-reseller-modal">
+<!-- EDIT RESELLER MODAL -->
+<div class="overlay" id="edit-reseller-modal" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="modal-header">
-      <h2>✏️ Edit Reseller</h2>
-      <button class="modal-close" onclick="closeModal('edit-reseller-modal')">✕</button>
-    </div>
+    <div class="modal-header"><h2>✏️ Edit Reseller</h2><button class="modal-close" data-close="edit-reseller-modal">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="er-id"/>
       <div class="row2">
-        <div class="field"><label>Username</label><input id="er-username" type="text"/></div>
-        <div class="field"><label>Email</label><input id="er-email" type="email"/></div>
+        <div class="field"><label>Username</label><input id="er-username" type="text" maxlength="50"/></div>
+        <div class="field"><label>Email</label><input id="er-email" type="email" maxlength="100"/></div>
       </div>
       <div class="row2">
-        <div class="field"><label>Credits</label><input id="er-credits" type="number" min="0"/></div>
-        <div class="field"><label>New Password <span style="color:var(--muted);font-weight:400;font-size:10px">(blank = keep)</span></label><input id="er-password" type="password" placeholder="Min 8 chars"/></div>
+        <div class="field"><label>Credits</label><input id="er-credits" type="number" min="0" max="999999"/></div>
+        <div class="field"><label>New Password <span style="color:var(--muted);font-weight:400;font-size:10px">(blank = keep)</span></label><input id="er-password" type="password" placeholder="Min 8 chars" maxlength="128" autocomplete="new-password"/></div>
       </div>
-      <div class="toggle-row" style="margin-top:4px">
-        <label>Block Reseller</label>
-        <label class="toggle"><input type="checkbox" id="er-blocked"/><span class="slider"></span></label>
-      </div>
-      <div class="danger-zone">
-        <h4>⚠ Danger Zone</h4>
-        <button class="btn btn-danger" onclick="deleteReseller()">🗑 Delete This Reseller</button>
-      </div>
+      <div class="toggle-row"><label>Block Reseller</label><label class="toggle"><input type="checkbox" id="er-blocked"/><span class="slider"></span></label></div>
+      <div class="danger-zone"><h4>⚠ Danger Zone</h4><button class="btn btn-danger" id="delete-reseller-btn">🗑 Delete This Reseller</button></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('edit-reseller-modal')">Cancel</button>
-      <button class="btn btn-green" onclick="saveReseller()">💾 Save Changes</button>
+    <div class="modal-footer"><button class="btn btn-ghost" data-close="edit-reseller-modal">Cancel</button><button class="btn btn-green" id="save-reseller-btn">💾 Save Changes</button></div>
+  </div>
+</div>
+
+<!-- SAFE CONFIRM MODAL — replaces window.confirm() -->
+<div class="overlay" id="confirm-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header"><h2 id="confirm-title">Confirm Delete</h2><button class="modal-close" data-close="confirm-modal">✕</button></div>
+    <div class="confirm-body">
+      <p id="confirm-msg"></p>
+      <label id="confirm-label"></label>
+      <input id="confirm-input" type="text" autocomplete="off" maxlength="100"/>
     </div>
+    <div class="modal-footer"><button class="btn btn-ghost" data-close="confirm-modal">Cancel</button><button class="btn btn-danger" id="confirm-ok-btn">🗑 Confirm Delete</button></div>
   </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-const API = 'https://backend-battle-destroyer.onrender.com';
-let TOKEN = '';
-let currentPage = 1, currentRPage = 1;
-let searchTimer = null, rsearchTimer = null;
-let heartbeatInterval = null;
+'use strict';
 
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['users','resellers'][i] === tab));
-  document.getElementById('tab-users').classList.toggle('active', tab === 'users');
-  document.getElementById('tab-resellers').classList.toggle('active', tab === 'resellers');
-  if (tab === 'resellers') loadResellers(1);
+// ── CONSTANTS ─────────────────────────────────────────────────────────────────
+const API            = 'https://backend-battle-destroyer.onrender.com';
+const FETCH_TIMEOUT  = 10000;
+const HEARTBEAT_MS   = 15000;
+const MONGO_ID_RE    = /^[a-f0-9]{24}$/i;
+const EMAIL_RE       = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let TOKEN = '', currentPage = 1, currentRPage = 1;
+let searchTimer = null, rsearchTimer = null, heartbeatInterval = null;
+let pendingDeleteFn = null;
+
+// In-memory caches keyed by MongoDB ObjectId (hex only — zero XSS surface)
+const USER_CACHE     = {};
+const RESELLER_CACHE = {};
+
+// ── SAFE DOM: never use innerHTML with user data ───────────────────────────────
+const $ = id => document.getElementById(id);
+function setText(id, val) { const e=$(id); if(e) e.textContent = String(val??''); }
+
+// ── INPUT VALIDATION ──────────────────────────────────────────────────────────
+function showErr(id, msg) {
+  const e=$(id);
+  if(!e) return;
+  e.textContent = msg;
+  e.style.display = msg ? 'block' : 'none';
+}
+function clearErrs(...ids) { ids.forEach(id => showErr(id,'')); }
+
+function validateUserForm() {
+  clearErrs('err-username','err-email','err-credits','err-password');
+  let ok = true;
+  const un = $('edit-username').value.trim();
+  const em = $('edit-email').value.trim();
+  const cr = Number($('edit-credits').value);
+  const pw = $('edit-password').value;
+  if (un.length < 2)  { showErr('err-username','Username must be at least 2 characters.'); ok=false; }
+  if (un.length > 50) { showErr('err-username','Username too long (max 50).'); ok=false; }
+  if (!EMAIL_RE.test(em)) { showErr('err-email','Invalid email address.'); ok=false; }
+  if (!Number.isFinite(cr) || cr < 0) { showErr('err-credits','Credits must be 0 or more.'); ok=false; }
+  if (pw && pw.length < 8)   { showErr('err-password','Password must be at least 8 characters.'); ok=false; }
+  if (pw && pw.length > 128) { showErr('err-password','Password too long.'); ok=false; }
+  return ok;
 }
 
-async function doLogin() {
-  const secret = document.getElementById('admin-secret').value.trim();
-  const errEl  = document.getElementById('login-error');
-  errEl.style.display = 'none';
-  if (!secret) { showLoginError('Secret is required.'); return; }
+// ── FETCH WITH TIMEOUT ────────────────────────────────────────────────────────
+async function fetchT(url, opts={}) {
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT);
   try {
-    const r = await fetch(`${API}/api/admin/session`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret }),
-    });
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } catch(e) {
+    if (e.name === 'AbortError') throw new Error('Request timed out. Please try again.');
+    throw e;
+  } finally { clearTimeout(tid); }
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const btn    = $('login-btn');
+  const secret = $('admin-secret').value;
+  const errEl  = $('login-error');
+  errEl.style.display = 'none';
+  if (!secret) { errEl.textContent = '⚠ Secret is required.'; errEl.style.display='block'; return; }
+  btn.textContent='⏳ Logging in…'; btn.disabled=true;
+  try {
+    const r    = await fetchT(`${API}/api/admin/session`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({secret}) });
     const data = await r.json();
     if (!r.ok) throw new Error(data.message || 'Login failed');
     TOKEN = data.token;
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
+    $('admin-secret').value = ''; // wipe secret from DOM immediately
+    $('login-screen').style.display = 'none';
+    $('app').style.display = 'flex';
     startHeartbeat();
     loadStats(); loadUsers(1);
-  } catch(e) { showLoginError(e.message); }
+  } catch(e) {
+    errEl.textContent = '⚠ ' + e.message;
+    errEl.style.display = 'block';
+  } finally { btn.textContent='🔐 Login to Admin'; btn.disabled=false; }
 }
-function showLoginError(msg) {
-  const el = document.getElementById('login-error');
-  el.textContent = '⚠ ' + msg; el.style.display = 'block';
-}
+
 async function logout() {
   if (TOKEN) {
-    try { await fetch(`${API}/api/admin/session`, { method: 'DELETE', headers: { 'x-admin-token': TOKEN } }); } catch {}
+    try { await fetchT(`${API}/api/admin/session`, { method:'DELETE', headers:{'x-admin-token':TOKEN} }); } catch{}
   }
   clearInterval(heartbeatInterval);
   TOKEN = '';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
+  $('login-screen').style.display = 'flex';
+  $('app').style.display = 'none';
 }
 
 function startHeartbeat() {
   clearInterval(heartbeatInterval);
   heartbeatInterval = setInterval(async () => {
     try {
-      const r = await fetch(`${API}/api/admin/session/check`, { headers: { 'x-admin-token': TOKEN } });
+      const r = await fetchT(`${API}/api/admin/session/check`, { headers:{'x-admin-token':TOKEN} });
       if (!r.ok) {
-        const data = await r.json();
+        const d = await r.json().catch(()=>({}));
         clearInterval(heartbeatInterval);
-        forceLogout(data.message === 'SESSION_EXPIRED'
-          ? 'Your session expired. Please log in again.'
-          : '⚠ Another device logged in as admin. You have been signed out.');
+        forceLogout(d.message === 'SESSION_EXPIRED'
+          ? 'Session expired. Please log in again.'
+          : '⚠ Another device logged in. You have been signed out.');
       }
-    } catch {}
-  }, 15000);
+    } catch { /* network blip — stay logged in */ }
+  }, HEARTBEAT_MS);
 }
+
 function forceLogout(reason) {
   clearInterval(heartbeatInterval);
   TOKEN = '';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  const el = document.getElementById('login-error');
-  el.textContent = reason; el.style.display = 'block';
+  $('app').style.display = 'none';
+  $('login-screen').style.display = 'flex';
+  $('login-error').textContent = reason;
+  $('login-error').style.display = 'block';
 }
 
-async function api(path, method = 'GET', body) {
-  const opts = { method, headers: { 'x-admin-token': TOKEN, 'Content-Type': 'application/json' } };
+// ── API HELPER ────────────────────────────────────────────────────────────────
+async function api(path, method='GET', body) {
+  const opts = { method, headers:{ 'x-admin-token':TOKEN, 'Content-Type':'application/json' } };
   if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(API + path, opts);
+  const r    = await fetchT(API + path, opts);
   const data = await r.json();
   if (!r.ok) {
-    if (r.status === 401 && (data.message === 'SESSION_INVALIDATED' || data.message === 'SESSION_EXPIRED')) {
+    if (r.status === 401) {
       forceLogout(data.message === 'SESSION_EXPIRED'
-        ? 'Your session expired. Please log in again.'
-        : '⚠ Another device logged in as admin. You have been signed out.');
+        ? 'Session expired. Please log in again.'
+        : '⚠ Another device logged in. You have been signed out.');
       throw new Error('Session ended');
     }
     throw new Error(data.message || 'Request failed');
@@ -470,235 +415,346 @@ async function api(path, method = 'GET', body) {
   return data;
 }
 
+// ── STATS ─────────────────────────────────────────────────────────────────────
 async function loadStats() {
   try {
     const s = await api('/api/admin/stats');
-    document.getElementById('s-total').textContent    = s.total;
-    document.getElementById('s-pro').textContent      = s.pro;
-    document.getElementById('s-credits').textContent  = s.withCredits;
-    document.getElementById('s-today').textContent    = s.today;
-    document.getElementById('s-resellers').textContent = s.activeResellers + '/' + s.totalResellers;
+    setText('s-total',    s.total);
+    setText('s-pro',      s.pro);
+    setText('s-credits',  s.withCredits);
+    setText('s-today',    s.today);
+    setText('s-resellers',`${s.activeResellers}/${s.totalResellers}`);
   } catch {}
 }
 
-async function loadUsers(page = 1) {
+// ── USERS TABLE — all rows built with createElement, zero innerHTML on user data
+async function loadUsers(page=1) {
   currentPage = page;
-  const search = document.getElementById('search-input').value.trim();
-  const tbody  = document.getElementById('user-tbody');
-  tbody.innerHTML = `<tr><td colspan="8" class="loading"><span class="spinner"></span>Loading…</td></tr>`;
+  const search = $('search-input').value.trim().slice(0,100);
+  const tbody  = $('user-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" class="loading"><span class="spinner"></span>Loading…</td></tr>';
   try {
-    const params = new URLSearchParams({ page, limit: 20 });
-    if (search) params.append('search', search);
-    const { users, total, pages } = await api(`/api/admin/users?${params}`);
+    const p = new URLSearchParams({ page, limit:20 });
+    if (search) p.append('search', search);
+    const { users, total, pages } = await api(`/api/admin/users?${p}`);
+    tbody.innerHTML = '';
     if (!users.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="empty">No users found</td></tr>`;
-      document.getElementById('page-info').textContent = '';
-      document.getElementById('pages').innerHTML = ''; return;
+      tbody.innerHTML = '<tr><td colspan="8" class="empty">No users found</td></tr>';
+      setText('page-info',''); $('pages').innerHTML=''; return;
     }
-    tbody.innerHTML = users.map(u => `
-      <tr>
-        <td><strong>${esc(u.username)}</strong></td>
-        <td style="color:var(--muted)">${esc(u.email)}</td>
-        <td class="mono">${esc(u.userId || '—')}</td>
-        <td><span class="badge badge-credits">💎 ${u.credits}</span></td>
-        <td style="color:var(--muted)">${u.referralCount || 0}</td>
-        <td><span class="badge badge-pro ${u.isPro?'active':''}">${u.isPro?'⭐ Pro':'Free'}</span></td>
-        <td style="color:var(--muted)">${fmtDate(u.createdAt)}</td>
-        <td><div class="actions">
-          <button class="icon-btn edit" onclick='openEdit(${JSON.stringify(u)})' title="Edit">✏️</button>
-          <button class="icon-btn del" onclick="quickDelete('${u._id}','${esc(u.username)}')" title="Delete">🗑</button>
-        </div></td>
-      </tr>`).join('');
-    renderPagination('page-info','pages', page, pages, total, 20, loadUsers);
+    users.forEach(u => {
+      if (MONGO_ID_RE.test(u._id)) USER_CACHE[u._id] = u;
+      const tr = document.createElement('tr');
+      const td = (text, cls, style) => {
+        const el = document.createElement('td');
+        if (cls)   el.className = cls;
+        if (style) el.style.cssText = style;
+        if (text !== undefined) el.textContent = text;
+        return el;
+      };
+      const nameTd = document.createElement('td');
+      const strong = document.createElement('strong');
+      strong.textContent = u.username; nameTd.appendChild(strong);
+      tr.appendChild(nameTd);
+      tr.appendChild(td(u.email, '', 'color:var(--muted)'));
+      tr.appendChild(td(u.userId||'—','mono'));
+      const crTd = document.createElement('td');
+      const crBadge = document.createElement('span');
+      crBadge.className='badge badge-credits'; crBadge.textContent=`💎 ${Number(u.credits)||0}`;
+      crTd.appendChild(crBadge); tr.appendChild(crTd);
+      tr.appendChild(td(u.referralCount||0,'','color:var(--muted)'));
+      const proTd = document.createElement('td');
+      const proBadge = document.createElement('span');
+      proBadge.className=`badge badge-pro${u.isPro?' active':''}`;
+      proBadge.textContent=u.isPro?'⭐ Pro':'Free';
+      proTd.appendChild(proBadge); tr.appendChild(proTd);
+      tr.appendChild(td(fmtDate(u.createdAt),'','color:var(--muted)'));
+      // Actions — pass only ObjectId (hex), no user data in listeners
+      const actTd = document.createElement('td');
+      const div   = document.createElement('div'); div.className='actions';
+      const editBtn = makeBtn('✏️','icon-btn edit-btn','Edit', () => openEdit(u._id));
+      const delBtn  = makeBtn('🗑','icon-btn','Delete', () => confirmDeleteUser(u._id));
+      div.appendChild(editBtn); div.appendChild(delBtn);
+      actTd.appendChild(div); tr.appendChild(actTd);
+      tbody.appendChild(tr);
+    });
+    renderPagination('page-info','pages',page,pages,total,20,loadUsers);
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty">Error: ${e.message}</td></tr>`;
+    tbody.innerHTML='';
+    const tr=document.createElement('tr'), td=document.createElement('td');
+    td.colSpan=8; td.className='empty'; td.textContent='Error: '+e.message;
+    tr.appendChild(td); tbody.appendChild(tr);
   }
 }
-function debounceSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadUsers(1), 350); }
 
-async function loadResellers(page = 1) {
+// ── RESELLERS TABLE ───────────────────────────────────────────────────────────
+async function loadResellers(page=1) {
   currentRPage = page;
-  const search = document.getElementById('rsearch-input').value.trim();
-  const tbody  = document.getElementById('reseller-tbody');
-  tbody.innerHTML = `<tr><td colspan="8" class="loading"><span class="spinner"></span>Loading…</td></tr>`;
+  const search = $('rsearch-input').value.trim().slice(0,100);
+  const tbody  = $('reseller-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" class="loading"><span class="spinner"></span>Loading…</td></tr>';
   try {
-    const params = new URLSearchParams({ page, limit: 20 });
-    if (search) params.append('search', search);
-    const { resellers, total, pages } = await api(`/api/admin/resellers?${params}`);
+    const p = new URLSearchParams({ page, limit:20 });
+    if (search) p.append('search', search);
+    const { resellers, total, pages } = await api(`/api/admin/resellers?${p}`);
+    tbody.innerHTML='';
     if (!resellers.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="empty">No resellers found</td></tr>`;
-      document.getElementById('rpage-info').textContent = '';
-      document.getElementById('rpages').innerHTML = ''; return;
+      tbody.innerHTML='<tr><td colspan="8" class="empty">No resellers found</td></tr>';
+      setText('rpage-info',''); $('rpages').innerHTML=''; return;
     }
-    tbody.innerHTML = resellers.map(r => `
-      <tr>
-        <td><strong>${esc(r.username)}</strong></td>
-        <td style="color:var(--muted)">${esc(r.email)}</td>
-        <td><span class="badge badge-credits">💎 ${r.credits}</span></td>
-        <td style="color:var(--muted)">💸 ${r.totalGiven || 0}</td>
-        <td><span class="badge ${r.isBlocked?'badge-blocked':'badge-active'}">${r.isBlocked?'🔒 Blocked':'✅ Active'}</span></td>
-        <td style="color:var(--muted)">${r.lastLogin ? fmtDate(r.lastLogin) : 'Never'}</td>
-        <td style="color:var(--muted)">${fmtDate(r.createdAt)}</td>
-        <td><div class="actions">
-          <button class="icon-btn edit" onclick='openEditReseller(${JSON.stringify(r)})' title="Edit">✏️</button>
-          <button class="icon-btn block" onclick="toggleBlock('${r._id}','${esc(r.username)}',${r.isBlocked})" title="${r.isBlocked?'Unblock':'Block'}">${r.isBlocked?'🔓':'🔒'}</button>
-          <button class="icon-btn del" onclick="quickDeleteReseller('${r._id}','${esc(r.username)}')" title="Delete">🗑</button>
-        </div></td>
-      </tr>`).join('');
-    renderPagination('rpage-info','rpages', page, pages, total, 20, loadResellers);
+    resellers.forEach(r => {
+      if (MONGO_ID_RE.test(r._id)) RESELLER_CACHE[r._id] = r;
+      const tr = document.createElement('tr');
+      const nameTd = document.createElement('td');
+      const s = document.createElement('strong'); s.textContent=r.username; nameTd.appendChild(s);
+      tr.appendChild(nameTd);
+      const emailTd = document.createElement('td'); emailTd.style.color='var(--muted)'; emailTd.textContent=r.email;
+      tr.appendChild(emailTd);
+      const crTd=document.createElement('td'); const cb=document.createElement('span');
+      cb.className='badge badge-credits'; cb.textContent=`💎 ${Number(r.credits)||0}`;
+      crTd.appendChild(cb); tr.appendChild(crTd);
+      const givenTd=document.createElement('td'); givenTd.style.color='var(--muted)'; givenTd.textContent=`💸 ${r.totalGiven||0}`;
+      tr.appendChild(givenTd);
+      const stTd=document.createElement('td'); const sb=document.createElement('span');
+      sb.className=`badge ${r.isBlocked?'badge-blocked':'badge-active'}`;
+      sb.textContent=r.isBlocked?'🔒 Blocked':'✅ Active'; stTd.appendChild(sb); tr.appendChild(stTd);
+      const llTd=document.createElement('td'); llTd.style.color='var(--muted)'; llTd.textContent=r.lastLogin?fmtDate(r.lastLogin):'Never';
+      tr.appendChild(llTd);
+      const crTd2=document.createElement('td'); crTd2.style.color='var(--muted)'; crTd2.textContent=fmtDate(r.createdAt);
+      tr.appendChild(crTd2);
+      const actTd=document.createElement('td'); const div=document.createElement('div'); div.className='actions';
+      const editBtn  = makeBtn('✏️','icon-btn edit-btn','Edit', ()=>openEditReseller(r._id));
+      const blockBtn = makeBtn(r.isBlocked?'🔓':'🔒','icon-btn block-btn',r.isBlocked?'Unblock':'Block', ()=>toggleBlock(r._id,r.isBlocked));
+      const delBtn   = makeBtn('🗑','icon-btn','Delete', ()=>confirmDeleteReseller(r._id));
+      div.appendChild(editBtn); div.appendChild(blockBtn); div.appendChild(delBtn);
+      actTd.appendChild(div); tr.appendChild(actTd);
+      tbody.appendChild(tr);
+    });
+    renderPagination('rpage-info','rpages',page,pages,total,20,loadResellers);
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty">Error: ${e.message}</td></tr>`;
+    tbody.innerHTML='';
+    const tr=document.createElement('tr'), td=document.createElement('td');
+    td.colSpan=8; td.className='empty'; td.textContent='Error: '+e.message;
+    tr.appendChild(td); tbody.appendChild(tr);
   }
 }
-function debounceRSearch() { clearTimeout(rsearchTimer); rsearchTimer = setTimeout(() => loadResellers(1), 350); }
 
+function makeBtn(text, cls, title, handler) {
+  const b = document.createElement('button');
+  b.className=cls; b.title=title; b.textContent=text;
+  b.addEventListener('click', handler);
+  return b;
+}
+
+// ── PAGINATION ────────────────────────────────────────────────────────────────
 function renderPagination(infoId, pagesId, page, pages, total, limit, fn) {
-  const start = (page-1)*limit+1, end = Math.min(page*limit, total);
-  document.getElementById(infoId).textContent = `Showing ${start}–${end} of ${total}`;
-  const el = document.getElementById(pagesId); el.innerHTML = '';
-  for (let i = 1; i <= pages; i++) {
-    if (pages > 7 && i > 2 && i < pages-1 && Math.abs(i-page) > 1) {
-      if (i === 3 || i === pages-2) el.innerHTML += `<span style="color:var(--muted);padding:0 4px">…</span>`;
+  const start=(page-1)*limit+1, end=Math.min(page*limit,total);
+  setText(infoId,`Showing ${start}–${end} of ${total}`);
+  const container=$( pagesId); container.innerHTML='';
+  for (let i=1; i<=pages; i++) {
+    if (pages>7 && i>2 && i<pages-1 && Math.abs(i-page)>1) {
+      if (i===3||i===pages-2) { const d=document.createElement('span'); d.textContent='…'; d.style.cssText='color:var(--muted);padding:0 4px'; container.appendChild(d); }
       continue;
     }
-    el.innerHTML += `<button class="page-btn ${i===page?'active':''}" onclick="${fn.name}(${i})">${i}</button>`;
+    const btn=document.createElement('button');
+    btn.className=`page-btn${i===page?' active':''}`;
+    btn.textContent=i;
+    btn.addEventListener('click', ()=>fn(i));
+    container.appendChild(btn);
   }
 }
 
-function openEdit(u) {
-  document.getElementById('edit-id').value             = u._id;
-  document.getElementById('edit-username').value       = u.username;
-  document.getElementById('edit-email').value          = u.email;
-  document.getElementById('edit-credits').value        = u.credits;
-  document.getElementById('edit-refcount').value       = u.referralCount || 0;
-  document.getElementById('edit-password').value       = '';
-  document.getElementById('edit-ispro').checked        = !!u.isPro;
-  document.getElementById('edit-creditgiven').checked  = !!u.creditGiven;
-  document.getElementById('edit-modal').classList.add('open');
+// ── OPEN MODALS ───────────────────────────────────────────────────────────────
+function openEdit(id) {
+  const u = USER_CACHE[id]; if(!u) return;
+  $('edit-id').value=u._id; $('edit-username').value=u.username; $('edit-email').value=u.email;
+  $('edit-credits').value=u.credits; $('edit-refcount').value=u.referralCount||0;
+  $('edit-password').value=''; $('edit-ispro').checked=!!u.isPro; $('edit-creditgiven').checked=!!u.creditGiven;
+  clearErrs('err-username','err-email','err-credits','err-password');
+  openModal('edit-modal');
 }
-async function saveUser() {
-  const id = document.getElementById('edit-id').value;
-  const pw = document.getElementById('edit-password').value;
-  const body = {
-    username:      document.getElementById('edit-username').value.trim(),
-    email:         document.getElementById('edit-email').value.trim(),
-    credits:       Number(document.getElementById('edit-credits').value),
-    referralCount: Number(document.getElementById('edit-refcount').value),
-    isPro:         document.getElementById('edit-ispro').checked,
-    creditGiven:   document.getElementById('edit-creditgiven').checked,
-  };
-  if (pw) body.password = pw;
-  try {
-    await api(`/api/admin/users/${id}`, 'PATCH', body);
-    toast('User updated successfully', 'success');
-    closeModal('edit-modal'); loadUsers(currentPage); loadStats();
-  } catch(e) { toast(e.message, 'error'); }
-}
-async function deleteUser() {
-  const id = document.getElementById('edit-id').value;
-  const name = document.getElementById('edit-username').value;
-  if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
-  try {
-    await api(`/api/admin/users/${id}`, 'DELETE');
-    toast('User deleted', 'success');
-    closeModal('edit-modal'); loadUsers(currentPage); loadStats();
-  } catch(e) { toast(e.message, 'error'); }
-}
-async function quickDelete(id, name) {
-  if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
-  try {
-    await api(`/api/admin/users/${id}`, 'DELETE');
-    toast('User deleted', 'success'); loadUsers(currentPage); loadStats();
-  } catch(e) { toast(e.message, 'error'); }
+
+function openEditReseller(id) {
+  const r = RESELLER_CACHE[id]; if(!r) return;
+  $('er-id').value=r._id; $('er-username').value=r.username; $('er-email').value=r.email;
+  $('er-credits').value=r.credits; $('er-password').value=''; $('er-blocked').checked=!!r.isBlocked;
+  openModal('edit-reseller-modal');
 }
 
 function openCreateReseller() {
-  ['cr-username','cr-email','cr-password'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('cr-credits').value = 0;
-  document.getElementById('create-reseller-modal').classList.add('open');
+  ['cr-username','cr-email','cr-password'].forEach(id=>$(id).value='');
+  $('cr-credits').value=0; openModal('create-reseller-modal');
 }
+
+// ── SAVE / DELETE ─────────────────────────────────────────────────────────────
+async function saveUser() {
+  if (!validateUserForm()) return;
+  const id=parseInt($('edit-id').value); // just in case — ObjectId check below
+  const rawId=$('edit-id').value;
+  if (!MONGO_ID_RE.test(rawId)) { toast('Invalid ID','error'); return; }
+  const pw=$('edit-password').value;
+  const body = {
+    username:      $('edit-username').value.trim().slice(0,50),
+    email:         $('edit-email').value.trim().slice(0,100),
+    credits:       Math.max(0, Math.floor(Number($('edit-credits').value))),
+    referralCount: Math.max(0, Math.floor(Number($('edit-refcount').value))),
+    isPro:         $('edit-ispro').checked,
+    creditGiven:   $('edit-creditgiven').checked,
+  };
+  if (pw) body.password = pw;
+  const btn=$('save-user-btn'); btn.disabled=true; btn.textContent='⏳ Saving…';
+  try {
+    await api(`/api/admin/users/${rawId}`,'PATCH',body);
+    toast('User updated','success'); closeModal('edit-modal'); loadUsers(currentPage); loadStats();
+  } catch(e){ toast(e.message,'error'); }
+  finally { btn.disabled=false; btn.textContent='💾 Save Changes'; }
+}
+
 async function createReseller() {
-  const body = {
-    username: document.getElementById('cr-username').value.trim(),
-    email:    document.getElementById('cr-email').value.trim(),
-    password: document.getElementById('cr-password').value,
-    credits:  Number(document.getElementById('cr-credits').value) || 0,
-  };
-  if (!body.username || !body.email || !body.password) { toast('All fields required', 'error'); return; }
-  if (body.password.length < 8) { toast('Password must be 8+ characters', 'error'); return; }
+  const username=$('cr-username').value.trim().slice(0,50);
+  const email   =$('cr-email').value.trim().slice(0,100);
+  const password=$('cr-password').value;
+  const credits =Math.max(0,Math.floor(Number($('cr-credits').value)||0));
+  if (username.length<2)        { toast('Username must be at least 2 characters','error'); return; }
+  if (!EMAIL_RE.test(email))    { toast('Invalid email address','error'); return; }
+  if (!password||password.length<8) { toast('Password must be 8+ characters','error'); return; }
+  if (password.length>128)      { toast('Password too long','error'); return; }
+  const btn=$('create-reseller-btn'); btn.disabled=true; btn.textContent='⏳ Creating…';
   try {
-    await api('/api/admin/resellers', 'POST', body);
-    toast(`Reseller "${body.username}" created`, 'success');
+    await api('/api/admin/resellers','POST',{username,email,password,credits});
+    toast(`Reseller "${username}" created`,'success');
     closeModal('create-reseller-modal'); loadResellers(1); loadStats();
-  } catch(e) { toast(e.message, 'error'); }
+  } catch(e){ toast(e.message,'error'); }
+  finally { btn.disabled=false; btn.textContent='✅ Create Reseller'; }
 }
-function openEditReseller(r) {
-  document.getElementById('er-id').value       = r._id;
-  document.getElementById('er-username').value = r.username;
-  document.getElementById('er-email').value    = r.email;
-  document.getElementById('er-credits').value  = r.credits;
-  document.getElementById('er-password').value = '';
-  document.getElementById('er-blocked').checked = !!r.isBlocked;
-  document.getElementById('edit-reseller-modal').classList.add('open');
-}
+
 async function saveReseller() {
-  const id = document.getElementById('er-id').value;
-  const pw = document.getElementById('er-password').value;
-  const body = {
-    username:  document.getElementById('er-username').value.trim(),
-    email:     document.getElementById('er-email').value.trim(),
-    credits:   Number(document.getElementById('er-credits').value),
-    isBlocked: document.getElementById('er-blocked').checked,
-  };
-  if (pw) { if (pw.length < 8) { toast('Password must be 8+ characters', 'error'); return; } body.password = pw; }
+  const rawId=$('er-id').value;
+  if (!MONGO_ID_RE.test(rawId)) { toast('Invalid ID','error'); return; }
+  const pw=$('er-password').value;
+  const username=$('er-username').value.trim().slice(0,50);
+  const email   =$('er-email').value.trim().slice(0,100);
+  const credits =Math.max(0,Math.floor(Number($('er-credits').value)));
+  if (username.length<2)     { toast('Username too short','error'); return; }
+  if (!EMAIL_RE.test(email)) { toast('Invalid email','error'); return; }
+  if (pw&&pw.length<8)       { toast('Password must be 8+ characters','error'); return; }
+  if (pw&&pw.length>128)     { toast('Password too long','error'); return; }
+  const body={username,email,credits,isBlocked:$('er-blocked').checked};
+  if (pw) body.password=pw;
+  const btn=$('save-reseller-btn'); btn.disabled=true; btn.textContent='⏳ Saving…';
   try {
-    await api(`/api/admin/resellers/${id}`, 'PATCH', body);
-    toast('Reseller updated', 'success');
-    closeModal('edit-reseller-modal'); loadResellers(currentRPage); loadStats();
-  } catch(e) { toast(e.message, 'error'); }
-}
-async function toggleBlock(id, name, isBlocked) {
-  const action = isBlocked ? 'unblock' : 'block';
-  if (!confirm(`${action.charAt(0).toUpperCase()+action.slice(1)} reseller "${name}"?`)) return;
-  try {
-    await api(`/api/admin/resellers/${id}`, 'PATCH', { isBlocked: !isBlocked });
-    toast(`Reseller ${action}ed`, 'success'); loadResellers(currentRPage); loadStats();
-  } catch(e) { toast(e.message, 'error'); }
-}
-async function deleteReseller() {
-  const id = document.getElementById('er-id').value;
-  const name = document.getElementById('er-username').value;
-  if (!confirm(`Delete reseller "${name}"? This cannot be undone.`)) return;
-  try {
-    await api(`/api/admin/resellers/${id}`, 'DELETE');
-    toast('Reseller deleted', 'success');
-    closeModal('edit-reseller-modal'); loadResellers(currentRPage); loadStats();
-  } catch(e) { toast(e.message, 'error'); }
-}
-async function quickDeleteReseller(id, name) {
-  if (!confirm(`Delete reseller "${name}"? This cannot be undone.`)) return;
-  try {
-    await api(`/api/admin/resellers/${id}`, 'DELETE');
-    toast('Reseller deleted', 'success'); loadResellers(currentRPage); loadStats();
-  } catch(e) { toast(e.message, 'error'); }
+    await api(`/api/admin/resellers/${rawId}`,'PATCH',body);
+    toast('Reseller updated','success'); closeModal('edit-reseller-modal'); loadResellers(currentRPage); loadStats();
+  } catch(e){ toast(e.message,'error'); }
+  finally { btn.disabled=false; btn.textContent='💾 Save Changes'; }
 }
 
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
-function toast(msg, type = 'success') {
-  const el = document.createElement('div');
-  el.className = `toast-msg ${type}`;
-  el.innerHTML = `${type==='success'?'✅':'❌'} ${msg}`;
-  document.getElementById('toast').appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+async function toggleBlock(id, isBlocked) {
+  if (!MONGO_ID_RE.test(id)) { toast('Invalid ID','error'); return; }
+  try {
+    await api(`/api/admin/resellers/${id}`,'PATCH',{isBlocked:!isBlocked});
+    toast(`Reseller ${isBlocked?'unblocked':'blocked'}`,'success'); loadResellers(currentRPage); loadStats();
+  } catch(e){ toast(e.message,'error'); }
 }
 
-['edit-modal','create-reseller-modal','edit-reseller-modal'].forEach(id => {
-  document.getElementById(id).addEventListener('click', function(e) { if (e.target===this) closeModal(id); });
-});
-document.addEventListener('keydown', e => {
-  if (e.key==='Enter' && document.getElementById('login-screen').style.display!=='none') doLogin();
+// ── SAFE CONFIRM MODAL ────────────────────────────────────────────────────────
+// Replaces window.confirm() — requires typing the name to confirm deletion
+function showConfirm(title, message, matchWord, onConfirm) {
+  setText('confirm-title', title);
+  $('confirm-msg').textContent = message;
+  $('confirm-label').textContent = `Type "${matchWord}" to confirm:`;
+  $('confirm-input').value=''; $('confirm-input').placeholder=matchWord;
+  pendingDeleteFn = { fn: onConfirm, word: matchWord };
+  openModal('confirm-modal');
+  setTimeout(()=>$('confirm-input').focus(), 80);
+}
+
+function confirmDeleteUser(id) {
+  const u=USER_CACHE[id]; if(!u) return;
+  showConfirm('Delete User', `Permanently delete "${u.username}"? This cannot be undone.`, u.username, ()=>deleteUser(id));
+}
+async function deleteUser(id) {
+  if (!MONGO_ID_RE.test(id)) { toast('Invalid ID','error'); return; }
+  try {
+    await api(`/api/admin/users/${id}`,'DELETE');
+    delete USER_CACHE[id];
+    toast('User deleted','success'); closeModal('edit-modal'); loadUsers(currentPage); loadStats();
+  } catch(e){ toast(e.message,'error'); }
+}
+
+function confirmDeleteReseller(id) {
+  const r=RESELLER_CACHE[id]; if(!r) return;
+  showConfirm('Delete Reseller', `Permanently delete reseller "${r.username}"? This cannot be undone.`, r.username, ()=>deleteReseller(id));
+}
+async function deleteReseller(id) {
+  if (!MONGO_ID_RE.test(id)) { toast('Invalid ID','error'); return; }
+  try {
+    await api(`/api/admin/resellers/${id}`,'DELETE');
+    delete RESELLER_CACHE[id];
+    toast('Reseller deleted','success'); closeModal('edit-reseller-modal'); loadResellers(currentRPage); loadStats();
+  } catch(e){ toast(e.message,'error'); }
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  $('tab-users').classList.toggle('active',tab==='users');
+  $('tab-resellers').classList.toggle('active',tab==='resellers');
+  if (tab==='resellers') loadResellers(1);
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────────────────────
+function openModal(id)  { $(id).classList.add('open'); }
+function closeModal(id) { $(id).classList.remove('open'); }
+
+// ── TOAST — uses textContent, never innerHTML ─────────────────────────────────
+function toast(msg, type='success') {
+  const el=document.createElement('div');
+  el.className=`toast-msg ${type}`;
+  el.textContent=(type==='success'?'✅ ':'❌ ')+msg;
+  $('toast').appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function fmtDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+  catch { return '—'; }
+}
+function debounceSearch()  { clearTimeout(searchTimer);  searchTimer =setTimeout(()=>loadUsers(1),350); }
+function debounceRSearch() { clearTimeout(rsearchTimer); rsearchTimer=setTimeout(()=>loadResellers(1),350); }
+
+// ── ALL EVENT LISTENERS — zero inline onclick in HTML ─────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  $('login-btn').addEventListener('click', doLogin);
+  $('admin-secret').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  $('logout-btn').addEventListener('click', logout);
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+  $('search-input').addEventListener('input', debounceSearch);
+  $('rsearch-input').addEventListener('input', debounceRSearch);
+  $('refresh-users-btn').addEventListener('click', ()=>loadUsers(1));
+  $('refresh-resellers-btn').addEventListener('click', ()=>loadResellers(1));
+  $('new-reseller-btn').addEventListener('click', openCreateReseller);
+  $('save-user-btn').addEventListener('click', saveUser);
+  $('delete-user-btn').addEventListener('click', ()=>{ const id=$('edit-id').value; if(id) confirmDeleteUser(id); });
+  $('save-reseller-btn').addEventListener('click', saveReseller);
+  $('delete-reseller-btn').addEventListener('click', ()=>{ const id=$('er-id').value; if(id) confirmDeleteReseller(id); });
+  $('create-reseller-btn').addEventListener('click', createReseller);
+  // Confirm modal
+  $('confirm-ok-btn').addEventListener('click', ()=>{
+    const typed=$('confirm-input').value;
+    if (!pendingDeleteFn || typed !== pendingDeleteFn.word) { toast(`Type "${pendingDeleteFn?.word}" exactly`,'error'); return; }
+    closeModal('confirm-modal');
+    pendingDeleteFn.fn(); pendingDeleteFn=null;
+  });
+  $('confirm-input').addEventListener('keydown', e=>{ if(e.key==='Enter') $('confirm-ok-btn').click(); });
+  // All [data-close] buttons
+  document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click',()=>closeModal(btn.dataset.close)));
+  // Backdrop click closes modal
+  document.querySelectorAll('.overlay').forEach(ov=>ov.addEventListener('click',e=>{ if(e.target===ov) closeModal(ov.id); }));
+  // Escape closes top modal
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const o=document.querySelector('.overlay.open'); if(o) closeModal(o.id); } });
 });
 </script>
 </body>
