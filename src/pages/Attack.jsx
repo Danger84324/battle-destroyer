@@ -563,14 +563,10 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                         else if (diffHours < 24) timeAgo = `${diffHours}h ago`;
                                         else timeAgo = `${diffDays}d ago`;
 
-                                        // An entry is truly running only if the global attackStatus
-                                        // is still active AND this is the current running entry
-                                        const isLiveRunning =
-                                            attack.status === 'running' &&
-                                            attackStatus?.status === 'running' &&
-                                            attack.id === runningHistoryIdRef.current;
-
-                                        const isCompleted = attack.status === 'completed';
+                                        // Stale 'running' entries (from prev sessions) treated as completed
+                                        const isCompleted =
+                                            attack.status === 'completed' ||
+                                            (attack.status === 'running' && attack.id !== runningHistoryIdRef.current);
 
                                         return (
                                             <div
