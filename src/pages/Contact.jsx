@@ -32,7 +32,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
     useEffect(() => {
         const ctx = gsap.context(() => {
 
-            // Header section — fade + slide down
+            // ── Header section — fade + slide down ──
             const headerEls = headerRef.current?.children;
             if (headerEls) {
                 gsap.fromTo(
@@ -42,6 +42,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                 );
             }
 
+            // ── Other .card elements (left/right slide) ──
             gsap.utils.toArray('.card').forEach((el, i) => {
                 gsap.fromTo(
                     el,
@@ -62,48 +63,72 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                 );
             });
 
-            // Pricing cards — stagger in with a slight rotation twist
-            gsap.fromTo(
-                gridRef.current?.querySelectorAll('.plan-card'),
-                { opacity: 0, y: 60, rotateX: 8 },
-                {
-                    opacity: 1, y: 0, rotateX: 0,
-                    duration: 0.6,
-                    ease: 'power3.out',
-                    stagger: { amount: 0.5, from: 'start' },
-                    scrollTrigger: { trigger: gridRef.current, start: 'top 82%' },
-                }
-            );
+            // ── Pricing Cards — per-card trigger, reverses on scroll-up ──
+            gridRef.current?.querySelectorAll('.plan-card').forEach((card, i) => {
+                gsap.fromTo(
+                    card,
+                    {
+                        opacity: 0,
+                        y: 70,
+                        scale: 0.85,
+                    },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        duration: 0.55,
+                        ease: 'power3.out',
+                        delay: i * 0.06,
+                        scrollTrigger: {
+                            trigger: card,
+                            start: 'top 90%',
+                            end: 'top 55%',
+                            toggleActions: 'play none none reverse',
+                        },
+                    }
+                );
+            });
 
-            // Credit bars animate width from 0
-            gsap.fromTo(
-                gridRef.current?.querySelectorAll('.credit-bar-fill'),
-                { scaleX: 0, transformOrigin: 'left center' },
-                {
-                    scaleX: 1,
-                    duration: 0.8,
-                    ease: 'power2.out',
-                    stagger: { amount: 0.4 },
-                    scrollTrigger: { trigger: gridRef.current, start: 'top 80%' },
-                }
-            );
+            // ── Credit bars — per-card trigger, reverses on scroll-up ──
+            gridRef.current?.querySelectorAll('.plan-card').forEach((card) => {
+                const bar = card.querySelector('.credit-bar-fill');
+                if (!bar) return;
+                gsap.fromTo(
+                    bar,
+                    { scaleX: 0, transformOrigin: 'left center' },
+                    {
+                        scaleX: 1,
+                        duration: 0.8,
+                        ease: 'power2.out',
+                        scrollTrigger: {
+                            trigger: card,
+                            start: 'top 88%',
+                            toggleActions: 'play none none reverse',
+                        },
+                    }
+                );
+            });
 
-            // Popular badge pulse
+            // ── Popular badge pulse ──
             gsap.to('.popular-badge', {
                 boxShadow: '0 4px 28px rgba(220,38,38,0.6)',
                 repeat: -1, yoyo: true, duration: 1.4, ease: 'sine.inOut',
             });
 
-            // Info card slide up
+            // ── Info card slide up ──
             gsap.fromTo(infoRef.current,
                 { opacity: 0, y: 40 },
                 {
                     opacity: 1, y: 0, duration: 0.6, ease: 'power2.out',
-                    scrollTrigger: { trigger: infoRef.current, start: 'top 90%' }
+                    scrollTrigger: {
+                        trigger: infoRef.current,
+                        start: 'top 90%',
+                        toggleActions: 'play none none reverse',
+                    }
                 }
             );
 
-            // Telegram CTA button hover shimmer (continuous)
+            // ── Telegram CTA button shimmer (continuous) ──
             gsap.to('.tg-btn', {
                 boxShadow: '0 8px 36px rgba(37,99,235,0.5)',
                 repeat: -1, yoyo: true, duration: 1.8, ease: 'sine.inOut',
@@ -247,10 +272,10 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className={`w-full py-3 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 transition-all active:scale-95 mt-auto ${plan.popular
-                                            ? 'bg-red-600 hover:bg-red-500 text-white'
-                                            : dark
-                                                ? 'bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.1] text-slate-300 hover:text-white'
-                                                : 'bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700'
+                                        ? 'bg-red-600 hover:bg-red-500 text-white'
+                                        : dark
+                                            ? 'bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.1] text-slate-300 hover:text-white'
+                                            : 'bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700'
                                         }`}
                                     style={{
                                         fontFamily: "'Rajdhani', sans-serif",
