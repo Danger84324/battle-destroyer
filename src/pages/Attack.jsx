@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaGem, FaClipboard, FaExclamationTriangle, FaCheckCircle, FaCrown, FaStopCircle, FaTrash, FaHistory, FaShield } from 'react-icons/fa';
+import { FaGem, FaClipboard, FaExclamationTriangle, FaCheckCircle, FaCrown, FaStopCircle, FaTrash, FaHistory, FaServer } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import TurnstileWidget from '../components/TurnstileWidget';
@@ -329,7 +329,7 @@ export default function Attack({ toggleTheme, theme }) {
                             <div className="bg-gray-900/40 rounded-lg p-4 border border-gray-700/50">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2">
-                                        <FaShield className="text-yellow-400 text-lg" />
+                                        <FaServer  className="text-yellow-400 text-lg" />
                                         <span className="text-sm font-medium text-gray-300">
                                             {user.isPro ? 'Pro Network' : 'Free Network'}
                                         </span>
