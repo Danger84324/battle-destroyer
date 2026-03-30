@@ -27,23 +27,7 @@ export default function Attack({ toggleTheme, theme }) {
     const TOKEN_MAX_AGE_MS = 270_000;
 
     // Memoize checkAttackStatus to avoid dependency warning
-    const checkAttackStatus = useCallback(async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/api/panel/attack-status`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (response.data.data?.status === 'running') {
-                setAttackStatus(response.data.data);
-                setBgmiServer(response.data.data.bgmiServer);
-                startStatusPolling();
-            }
-        } catch (err) {
-            console.error('Error checking attack status:', err);
-        }
-    }, [API_URL]);
-
+    
     // ── Load user and check for existing attack ────────────────────────────────
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -77,7 +61,7 @@ export default function Attack({ toggleTheme, theme }) {
                 const response = await axios.get(`${API_URL}/api/panel/attack-status`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-
+                
                 if (response.data.data?.status !== 'running') {
                     setAttackStatus(null);
                     setBgmiServer(null);
@@ -90,7 +74,24 @@ export default function Attack({ toggleTheme, theme }) {
             }
         }, 10000); // Check every 10 seconds
     }, [API_URL]);
+    
+    const checkAttackStatus = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/api/panel/attack-status`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
+            if (response.data.data?.status === 'running') {
+                setAttackStatus(response.data.data);
+                setBgmiServer(response.data.data.bgmiServer);
+                startStatusPolling();
+            }
+        } catch (err) {
+            console.error('Error checking attack status:', err);
+        }
+    }, [API_URL]);
+    
     const handle = e => {
         setForm({ ...form, [e.target.name]: e.target.value });
         setErrors({ ...errors, [e.target.name]: '' });
@@ -119,7 +120,7 @@ export default function Attack({ toggleTheme, theme }) {
             clearInterval(statusIntervalRef.current);
         }
     }, []);
-
+    
     // ── Client-side validation (mirrors backend) ────────────────────────────────
     const validate = () => {
         const errs = {};
@@ -140,12 +141,12 @@ export default function Attack({ toggleTheme, theme }) {
 
         return errs;
     };
-
+    
     // ── Launch ──────────────────────────────────────────────────────────────────
     const launch = async () => {
         setLaunchError('');
         setLaunched(false);
-
+        
         // ✅ Captcha check FIRST
         const captchaToken = captchaTokenRef.current;
         const issuedAt = captchaIssuedRef.current;
