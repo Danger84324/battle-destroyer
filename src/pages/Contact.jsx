@@ -35,8 +35,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
             // ── HEADER — stagger fade + slide down on mount ──
             const headerEls = headerRef.current ? Array.from(headerRef.current.children) : [];
             if (headerEls.length) {
-                gsap.fromTo(
-                    headerEls,
+                gsap.fromTo(headerEls,
                     { opacity: 0, y: -28 },
                     {
                         opacity: 1, y: 0,
@@ -48,32 +47,48 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                 );
             }
 
-            // ── PLAN CARDS — grouped stagger, bottom-to-top + scale + fade ──
-            // ── PLAN CARDS — smooth bidirectional scroll animation ──
+            // ── PLAN CARDS — burst in from random directions ──
             const cards = gridRef.current
                 ? Array.from(gridRef.current.querySelectorAll('.plan-card'))
                 : [];
 
+            const burstOrigins = [
+                { x: -220, y: -100, rotation: -18 },  // top-left
+                { x: 0, y: -200, rotation: 8 },  // top-center
+                { x: 220, y: -100, rotation: 20 },  // top-right
+                { x: -260, y: 60, rotation: -14 },  // mid-left
+                { x: 260, y: 60, rotation: 16 },  // mid-right
+                { x: 0, y: 200, rotation: -8 },  // bottom-center
+            ];
+
             if (cards.length) {
+                // set all invisible before ScrollTrigger fires
+                gsap.set(cards, { opacity: 0 });
+
                 cards.forEach((card, i) => {
-                    gsap.fromTo(
-                        card,
+                    const origin = burstOrigins[i % burstOrigins.length];
+
+                    gsap.fromTo(card,
                         {
                             opacity: 0,
-                            y: 60,
-                            scale: 0.92,
+                            x: origin.x,
+                            y: origin.y,
+                            rotation: origin.rotation,
+                            scale: 0.55,
                         },
                         {
                             opacity: 1,
+                            x: 0,
                             y: 0,
+                            rotation: 0,
                             scale: 1,
-                            duration: 0.7,
-                            ease: 'power4.out',
+                            duration: 0.85,
+                            ease: 'back.out(1.3)',
                             scrollTrigger: {
-                                trigger: card,
-                                start: 'top 90%',
-                                end: 'top 60%',
-                                scrub: 1.2,   
+                                trigger: card,       
+                                start: 'top 88%',     
+                                end: 'top 50%',
+                                scrub: 1.0,          
                                 toggleActions: 'play none none reverse',
                             },
                         }
@@ -85,18 +100,17 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
             cards.forEach((card) => {
                 const bar = card.querySelector('.credit-bar-fill');
                 if (!bar) return;
-                gsap.fromTo(
-                    bar,
+                gsap.fromTo(bar,
                     { scaleX: 0, transformOrigin: 'left center' },
                     {
                         scaleX: 1,
-                        duration: 1,
+                        duration: 0.9,
                         ease: 'power2.out',
                         scrollTrigger: {
                             trigger: card,
                             start: 'top 88%',
                             end: 'top 55%',
-                            scrub: 1.5, 
+                            scrub: 1.2,
                         },
                     }
                 );
@@ -112,8 +126,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
 
             // ── INFO CARD — slide up on scroll ──
             if (infoRef.current) {
-                gsap.fromTo(
-                    infoRef.current,
+                gsap.fromTo(infoRef.current,
                     { opacity: 0, y: 40 },
                     {
                         opacity: 1, y: 0,
