@@ -383,7 +383,13 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                                 name="duration" type="number" value={form.duration} onChange={handle}
                                                 placeholder={`1 – ${MAX_DURATION}`} min="1" max={MAX_DURATION}
                                                 className={`${inputCls} ${errors.duration ? 'border-red-500/60' : ''}`}
-                                                disabled={attackStatus?.status === 'running'}
+                                                disabled={
+                                                    launching ||
+                                                    user.credits < 1 ||
+                                                    !captchaReady ||
+                                                    attackStatus?.status === 'running' ||
+                                                    cooldown > 0
+                                                }
                                             />
                                             {errors.duration && (
                                                 <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1.5">
@@ -430,30 +436,45 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                     {/* Launch Button */}
                                     <button
                                         onClick={launch}
-                                        disabled={launching || user.credits < 1 || !captchaReady || attackStatus?.status === 'running'}
-                                        className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${user.credits < 1 || !captchaReady || attackStatus?.status === 'running'
-                                            ? dark ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                            : launching
-                                                ? 'bg-red-700 text-white cursor-wait'
-                                                : 'bg-red-600 hover:bg-red-500 text-white'
+                                        disabled={
+                                            launching ||
+                                            user.credits < 1 ||
+                                            !captchaReady ||
+                                            attackStatus?.status === 'running' ||
+                                            cooldown > 0
+                                        }
+                                        className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${user.credits < 1 || !captchaReady || attackStatus?.status === 'running' || cooldown > 0
+                                                ? dark
+                                                    ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed'
+                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                : launching
+                                                    ? 'bg-red-700 text-white cursor-wait'
+                                                    : 'bg-red-600 hover:bg-red-500 text-white'
                                             }`}
-                                        style={{
-                                            fontFamily: "'Rajdhani', sans-serif",
-                                            letterSpacing: '0.08em',
-                                            boxShadow: (!launching && user.credits > 0 && captchaReady && attackStatus?.status !== 'running')
-                                                ? '0 6px 24px rgba(220,38,38,0.35)' : 'none',
-                                        }}
                                     >
-                                        {launching ? (
-                                            <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> LAUNCHING...</>
+                                        {cooldown > 0 ? (
+                                            <>WAIT {cooldown}s</>
+                                        ) : launching ? (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                LAUNCHING...
+                                            </>
                                         ) : user.credits < 1 ? (
-                                            <><FaBan size={15} /> INSUFFICIENT CREDITS</>
+                                            <>
+                                                <FaBan size={15} /> INSUFFICIENT CREDITS
+                                            </>
                                         ) : !captchaReady ? (
-                                            <><FaLock size={15} /> COMPLETE CAPTCHA</>
+                                            <>
+                                                <FaLock size={15} /> COMPLETE CAPTCHA
+                                            </>
                                         ) : attackStatus?.status === 'running' ? (
-                                            <><FaRocket size={15} /> ATTACK RUNNING</>
+                                            <>
+                                                <FaRocket size={15} /> ATTACK RUNNING
+                                            </>
                                         ) : (
-                                            <><FaRocket size={15} /> LAUNCH ATTACK</>
+                                            <>
+                                                <FaRocket size={15} /> LAUNCH ATTACK
+                                            </>
                                         )}
                                     </button>
                                 </div>
