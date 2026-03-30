@@ -169,7 +169,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                         {plans.map((plan, i) => (
                             <div
                                 key={i}
-                                className={`card plan-card relative rounded-2xl border p-5 sm:p-6 flex flex-col transition-all hover:-translate-y-1 hover:shadow-card-hover ${cardCls} ${plan.popular ? (dark ? 'border-red-500/40 ring-1 ring-red-500/20' : 'border-red-300 ring-1 ring-red-100') : ''
+                                className={`plan-card relative rounded-2xl border p-5 sm:p-6 flex flex-col transition-all hover:-translate-y-1 hover:shadow-card-hover ${cardCls} ${plan.popular ? (dark ? 'border-red-500/40 ring-1 ring-red-500/20' : 'border-red-300 ring-1 ring-red-100') : ''
                                     }`}
                                 style={{ opacity: 0 }}
                             >
