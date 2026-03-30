@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaExclamationTriangle, FaCheckCircle, FaStopCircle, FaTrash, FaHistory, FaGem, FaCopy, FaCheck } from 'react-icons/fa';
+import { FaExclamationTriangle, FaCheckCircle, FaStopCircle, FaTrash, FaHistory, FaGem } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import TurnstileWidget from '../components/TurnstileWidget';
 
@@ -17,7 +17,6 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     const [stoppingAttack, setStoppingAttack] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
     const [attackHistory, setAttackHistory] = useState([]);
-    const [copiedId, setCopiedId] = useState(false);
     const navigate = useNavigate();
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
     const [captchaReady, setCaptchaReady] = useState(false);
