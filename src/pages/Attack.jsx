@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaGem, FaClipboard, FaExclamationTriangle, FaCheckCircle, FaCrown, FaStopCircle, FaTrash, FaHistory, FaDatabase } from 'react-icons/fa';
+import { FaClipboard, FaExclamationTriangle, FaCheckCircle, FaStopCircle, FaTrash, FaHistory, FaServer } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import TurnstileWidget from '../components/TurnstileWidget';
@@ -329,7 +329,7 @@ export default function Attack({ toggleTheme, theme }) {
                             <div className="bg-gray-900/40 rounded-lg p-4 border border-gray-700/50">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2">
-                                        <FaDatabase rver  className="text-yellow-400 text-lg" />
+                                        <FaServer className="text-yellow-400 text-lg" />
                                         <span className="text-sm font-medium text-gray-300">
                                             {user.isPro ? 'Pro Network' : 'Free Network'}
                                         </span>
@@ -621,7 +621,7 @@ export default function Attack({ toggleTheme, theme }) {
                                             <div key={attack.id} className="bg-gray-900/40 border border-white/10 rounded-lg p-4 flex justify-between items-center hover:border-white/20 transition-colors">
                                                 <div className="space-y-1">
                                                     <div className="text-sm font-medium text-white">{attack.ip}:{attack.port}</div>
-                                                    <div className="text-xs text-gray-400">{attack.duration}s - {attack.status === 'completed' ? '1 concurrent' : 'Running'}</div>
+                                                    <div className="text-xs text-gray-400">{attack.duration}s - {timeAgo}</div>
                                                 </div>
                                                 <div className="text-right">
                                                     <div className="text-sm font-mono text-white mb-1">{attack.duration}s</div>
