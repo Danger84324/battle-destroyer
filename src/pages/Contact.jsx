@@ -14,20 +14,20 @@ gsap.registerPlugin(ScrollTrigger);
 const TELEGRAM_URL = 'https://t.me/BattleDestroyerDDOS_Bot';
 
 const plans = [
-    { credits: 50,  price: 499,  label: 'Starter',  icon: FaBolt,  color: 'text-blue-400',   bg: 'from-blue-600/10 to-blue-600/5',   border: 'border-blue-600/20',   popular: false },
-    { credits: 150, price: 999,  label: 'Basic',     icon: FaGem,   color: 'text-green-400',  bg: 'from-green-600/10 to-green-600/5', border: 'border-green-600/20',  popular: false },
-    { credits: 250, price: 1499, label: 'Standard',  icon: FaFire,  color: 'text-orange-400', bg: 'from-orange-600/10 to-orange-600/5', border: 'border-orange-600/20', popular: true },
-    { credits: 333, price: 1999, label: 'Advanced',  icon: FaFire,  color: 'text-red-400',    bg: 'from-red-600/10 to-red-600/5',     border: 'border-red-600/20',    popular: false },
-    { credits: 400, price: 2499, label: 'Pro',       icon: FaCrown, color: 'text-yellow-400', bg: 'from-yellow-600/10 to-yellow-600/5', border: 'border-yellow-600/20', popular: false },
-    { credits: 500, price: 2999, label: 'Elite',     icon: FaCrown, color: 'text-purple-400', bg: 'from-purple-600/10 to-purple-600/5', border: 'border-purple-600/20', popular: false },
+    { credits: 50, price: 499, label: 'Starter', icon: FaBolt, color: 'text-blue-400', bg: 'from-blue-600/10 to-blue-600/5', border: 'border-blue-600/20', popular: false },
+    { credits: 150, price: 999, label: 'Basic', icon: FaGem, color: 'text-green-400', bg: 'from-green-600/10 to-green-600/5', border: 'border-green-600/20', popular: false },
+    { credits: 250, price: 1499, label: 'Standard', icon: FaFire, color: 'text-orange-400', bg: 'from-orange-600/10 to-orange-600/5', border: 'border-orange-600/20', popular: true },
+    { credits: 333, price: 1999, label: 'Advanced', icon: FaFire, color: 'text-red-400', bg: 'from-red-600/10 to-red-600/5', border: 'border-red-600/20', popular: false },
+    { credits: 400, price: 2499, label: 'Pro', icon: FaCrown, color: 'text-yellow-400', bg: 'from-yellow-600/10 to-yellow-600/5', border: 'border-yellow-600/20', popular: false },
+    { credits: 500, price: 2999, label: 'Elite', icon: FaCrown, color: 'text-purple-400', bg: 'from-purple-600/10 to-purple-600/5', border: 'border-purple-600/20', popular: false },
 ];
 
 export default function Contact({ toggleTheme, theme, setIsAuth }) {
     const dark = theme !== 'light';
 
     const headerRef = useRef(null);
-    const gridRef   = useRef(null);
-    const infoRef   = useRef(null);
+    const gridRef = useRef(null);
+    const infoRef = useRef(null);
 
     useEffect(() => {
         const ctx = gsap.context(() => {
@@ -156,7 +156,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                         <p className={`text-sm max-w-md mx-auto mb-6 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                             Purchase credits to power your attacks. All payments handled securely via Telegram bot.
                         </p>
-                        <a>
+                        <a
                             href={TELEGRAM_URL}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -166,6 +166,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                                 letterSpacing: '0.06em',
                                 boxShadow: '0 6px 24px rgba(37,99,235,0.35)',
                             }}
+                        >
                             <FaTelegram size={16} />
                             CONTACT VIA TELEGRAM BOT
                             <FaChevronRight size={11} />
@@ -180,13 +181,12 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                         {plans.map((plan, i) => (
                             <div
                                 key={i}
-                                className={`plan-card relative rounded-2xl border p-5 sm:p-6 flex flex-col transition-[border-color,box-shadow] hover:-translate-y-1 hover:shadow-card-hover ${cardCls} ${
-                                    plan.popular
-                                        ? dark
-                                            ? 'border-red-500/40 ring-1 ring-red-500/20'
-                                            : 'border-red-300 ring-1 ring-red-100'
-                                        : ''
-                                }`}
+                                className={`plan-card relative rounded-2xl border p-5 sm:p-6 flex flex-col transition-[border-color,box-shadow] hover:-translate-y-1 hover:shadow-card-hover ${cardCls} ${plan.popular
+                                    ? dark
+                                        ? 'border-red-500/40 ring-1 ring-red-500/20'
+                                        : 'border-red-300 ring-1 ring-red-100'
+                                    : ''
+                                    }`}
                                 style={{ willChange: 'transform, opacity' }}
                             >
                                 {/* Popular badge */}
@@ -270,22 +270,22 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                                 </div>
 
                                 {/* Buy button */}
-                                <a>
+                                <a
                                     href={TELEGRAM_URL}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`w-full py-3 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 transition-colors active:scale-95 mt-auto ${
-                                        plan.popular
+                                    className={`w-full py-3 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 transition-colors active:scale-95 mt-auto ${plan.popular
                                             ? 'bg-red-600 hover:bg-red-500 text-white'
                                             : dark
                                                 ? 'bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.1] text-slate-300 hover:text-white'
                                                 : 'bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700'
-                                    }`}
+                                        }`}
                                     style={{
                                         fontFamily: "'Rajdhani', sans-serif",
                                         letterSpacing: '0.06em',
                                         boxShadow: plan.popular ? '0 4px 20px rgba(220,38,38,0.3)' : 'none',
                                     }}
+                                >
                                     <FaShoppingCart size={13} />
                                     BUY NOW
                                 </a>
