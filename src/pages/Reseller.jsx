@@ -7,7 +7,6 @@ import {
     FaSearch, FaSignOutAlt, FaShieldAlt, FaCheckCircle,
     FaExclamationTriangle, FaStar, FaRupeeSign,
 } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
 import { MdWbSunny, MdNightlight, MdRadar } from 'react-icons/md';
 import AnimatedBackground from '../components/AnimatedBackground';
 
