@@ -26,7 +26,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     const [cooldown, setCooldown] = useState(0);
     const cooldownTimerRef = useRef(null);
     const [stats, setStats] = useState({ totalAttacks: 0, totalUsers: 0 });
-    const MAINTENANCE = false;
+    const MAINTENANCE = true;
 
     const navigate = useNavigate();
     const dark = theme !== 'light';
