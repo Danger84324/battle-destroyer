@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
     FaExclamationTriangle, FaCheckCircle, FaTrash, FaHistory,
-    FaGem, FaBullseye, FaBan, FaLock, FaRocket, FaShieldAlt, FaUsers, FaCrown
+    FaGem, FaBullseye, FaBan, FaLock, FaRocket, FaShieldAlt, FaUsers, FaCrown,FaWrench
 } from 'react-icons/fa';
 import { MdRadar } from 'react-icons/md';
 import Navbar from '../components/Navbar';
@@ -26,6 +26,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     const [cooldown, setCooldown] = useState(0);
     const cooldownTimerRef = useRef(null);
     const [stats, setStats] = useState({ totalAttacks: 0, totalUsers: 0 });
+    const MAINTENANCE = true;
 
     const navigate = useNavigate();
     const dark = theme !== 'light';
@@ -495,22 +496,29 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                 <button
                                     onClick={launch}
                                     disabled={
+                                        MAINTENANCE ||
                                         launching ||
                                         user.credits < 1 ||
                                         !captchaReady ||
                                         attackStatus?.status === 'running' ||
                                         cooldown > 0
                                     }
-                                    className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${user.credits < 1 || !captchaReady || attackStatus?.status === 'running' || cooldown > 0
-                                        ? dark
-                                            ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed'
-                                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                        : launching
-                                            ? 'bg-red-700 text-white cursor-wait'
-                                            : 'bg-red-600 hover:bg-red-500 text-white'
+                                    className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${MAINTENANCE
+                                            ? dark
+                                                ? 'bg-yellow-500/10 text-yellow-500/60 cursor-not-allowed'
+                                                : 'bg-yellow-50 text-yellow-400 cursor-not-allowed'
+                                            : user.credits < 1 || !captchaReady || attackStatus?.status === 'running' || cooldown > 0
+                                                ? dark
+                                                    ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed'
+                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                : launching
+                                                    ? 'bg-red-700 text-white cursor-wait'
+                                                    : 'bg-red-600 hover:bg-red-500 text-white'
                                         }`}
                                 >
-                                    {cooldown > 0 ? (
+                                    {MAINTENANCE ? (
+                                        <><FaWrench size={15} /> SERVER UNDER MAINTENANCE</>
+                                    ) : cooldown > 0 ? (
                                         <>WAIT {cooldown}s</>
                                     ) : launching ? (
                                         <>
