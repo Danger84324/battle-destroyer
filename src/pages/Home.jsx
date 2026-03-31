@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef,useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     FaBullseye,
@@ -20,15 +20,11 @@ import Footer from '../components/Footer';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
 gsap.registerPlugin(ScrollTrigger);
 
-/* ─── STAT DATA ────────────────────────────────── */
-const STATS = [
-    { value: '99.9%', label: 'Uptime', icon: FaServer },
-    { value: '500+', label: 'Active Users', icon: FaUsers },
-    { value: '5000+', label: 'Attacks Launched', icon: FaBullseye },
-    { value: '<1ms', label: 'Response Time', icon: MdSpeed },
-];
+
+
 
 /* ─── FEATURE DATA ─────────────────────────────── */
 const FEATURES = [
@@ -112,12 +108,27 @@ export default function Home({ toggleTheme, theme }) {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const isLoggedIn = !!(localStorage.getItem('token') && user.username);
 
+    const [liveStats, setLiveStats] = useState({ totalAttacks: 0, totalUsers: 0 });
     // Refs for scroll reveal
     const heroRef = useRef(null);
     const statsRef = useRef(null);
     const featuresRef = useRef(null);
     const stepsRef = useRef(null);
     const ctaRef = useRef(null);
+
+    const STATS = [
+        { value: '99.9%', label: 'Uptime', icon: FaServer },
+        { value: liveStats.totalUsers.toLocaleString(), label: 'Active Users', icon: FaUsers },
+        { value: liveStats.totalAttacks.toLocaleString(), label: 'Attacks Launched', icon: FaBullseye },
+        { value: '<10ms', label: 'Response Time', icon: MdSpeed },
+    ];
+
+    useEffect(() => {
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/panel/stats`)
+            .then(r => r.json())
+            .then(d => setLiveStats(d))
+            .catch(() => { });
+    }, []);
 
     useEffect(() => {
         const ctx = gsap.context(() => {
@@ -258,8 +269,8 @@ export default function Home({ toggleTheme, theme }) {
             {/* ── TOP BAR ── */}
             <header
                 className={`relative z-50 border-b ${dark
-                        ? 'border-white/[0.06] bg-surface-900/80 backdrop-blur-xl'
-                        : 'border-black/[0.07] bg-white/80 backdrop-blur-xl'
+                    ? 'border-white/[0.06] bg-surface-900/80 backdrop-blur-xl'
+                    : 'border-black/[0.07] bg-white/80 backdrop-blur-xl'
                     }`}
             >
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -310,8 +321,8 @@ export default function Home({ toggleTheme, theme }) {
                             <Link
                                 to="/login"
                                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${dark
-                                        ? 'bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 hover:text-white border border-white/[0.08]'
-                                        : 'bg-black/[0.04] hover:bg-black/[0.07] text-slate-600 hover:text-slate-900 border border-black/[0.08]'
+                                    ? 'bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 hover:text-white border border-white/[0.08]'
+                                    : 'bg-black/[0.04] hover:bg-black/[0.07] text-slate-600 hover:text-slate-900 border border-black/[0.08]'
                                     }`}
                             >
                                 Login
@@ -440,8 +451,8 @@ export default function Home({ toggleTheme, theme }) {
                 <div className="max-w-5xl mx-auto">
                     <div
                         className={`rounded-2xl p-6 sm:p-8 border grid grid-cols-2 sm:grid-cols-4 gap-6 ${dark
-                                ? 'bg-white/[0.03] border-white/[0.07]'
-                                : 'bg-black/[0.02] border-black/[0.07]'
+                            ? 'bg-white/[0.03] border-white/[0.07]'
+                            : 'bg-black/[0.02] border-black/[0.07]'
                             }`}
                     >
                         {STATS.map((stat, i) => (
@@ -487,8 +498,8 @@ export default function Home({ toggleTheme, theme }) {
                             <div
                                 key={i}
                                 className={`reveal-up delay-${(i % 3) + 1} group rounded-2xl p-5 border transition-all duration-300 hover:-translate-y-1 ${dark
-                                        ? `bg-gradient-to-br ${f.bg} border-white/[0.07] hover:border-white/[0.12]`
-                                        : `bg-white border-black/[0.07] hover:border-black/[0.12] shadow-sm hover:shadow-md`
+                                    ? `bg-gradient-to-br ${f.bg} border-white/[0.07] hover:border-white/[0.12]`
+                                    : `bg-white border-black/[0.07] hover:border-black/[0.12] shadow-sm hover:shadow-md`
                                     }`}
                             >
                                 <div
@@ -567,8 +578,8 @@ export default function Home({ toggleTheme, theme }) {
                 <div className="max-w-3xl mx-auto text-center">
                     <div
                         className={`reveal-up rounded-3xl p-10 sm:p-14 border relative overflow-hidden ${dark
-                                ? 'bg-gradient-to-br from-red-600/10 via-surface-800/80 to-surface-800/80 border-red-600/20'
-                                : 'bg-gradient-to-br from-red-50 via-white to-white border-red-100'
+                            ? 'bg-gradient-to-br from-red-600/10 via-surface-800/80 to-surface-800/80 border-red-600/20'
+                            : 'bg-gradient-to-br from-red-50 via-white to-white border-red-100'
                             }`}
                     >
                         <div

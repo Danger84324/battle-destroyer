@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
     FaExclamationTriangle, FaCheckCircle, FaTrash, FaHistory,
-    FaGem, FaBullseye, FaBan, FaLock, FaRocket, FaShieldAlt,
+    FaGem, FaBullseye, FaBan, FaLock, FaRocket, FaShieldAlt,FaUsers
 } from 'react-icons/fa';
 import { MdRadar } from 'react-icons/md';
 import Navbar from '../components/Navbar';
@@ -25,6 +25,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     const [captchaReady, setCaptchaReady] = useState(false);
     const [cooldown, setCooldown] = useState(0);
     const cooldownTimerRef = useRef(null);
+    const [stats, setStats] = useState({ totalAttacks: 0, totalUsers: 0 });
 
     const navigate = useNavigate();
     const dark = theme !== 'light';
@@ -142,6 +143,10 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         clearInterval(countdownRef.current);
         clearInterval(statusPollRef.current);
     }, []);
+
+    axios.get(`${API_URL}/api/panel/stats`)
+        .then(r => setStats(r.data))
+        .catch(() => { });
 
     const handle = e => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -319,6 +324,39 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                         </div>
                     </div>
 
+                    {/* Stats Bar */}
+                    <div className={`rounded-2xl p-4 sm:p-5 border mb-6 transition-all ${cardCls}`}>
+                        <div className="flex items-center justify-around gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center">
+                                    <FaBullseye className="text-red-500" size={15} />
+                                </div>
+                                <div>
+                                    <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                        Total Attacks
+                                    </p>
+                                    <p className="font-black text-2xl text-red-500" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
+                                        {stats.totalAttacks.toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className={`w-px h-10 ${dark ? 'bg-white/10' : 'bg-slate-200'}`} />
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center">
+                                    <FaUsers className="text-red-500" size={15} />
+                                </div>
+                                <div>
+                                    <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                        Total Users
+                                    </p>
+                                    <p className="font-black text-2xl text-red-500" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
+                                        {stats.totalUsers.toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                         {/* ── Attack Config ── */}
@@ -444,12 +482,12 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                             cooldown > 0
                                         }
                                         className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${user.credits < 1 || !captchaReady || attackStatus?.status === 'running' || cooldown > 0
-                                                ? dark
-                                                    ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed'
-                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                                : launching
-                                                    ? 'bg-red-700 text-white cursor-wait'
-                                                    : 'bg-red-600 hover:bg-red-500 text-white'
+                                            ? dark
+                                                ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed'
+                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                            : launching
+                                                ? 'bg-red-700 text-white cursor-wait'
+                                                : 'bg-red-600 hover:bg-red-500 text-white'
                                             }`}
                                     >
                                         {cooldown > 0 ? (
