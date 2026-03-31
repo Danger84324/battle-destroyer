@@ -286,13 +286,6 @@ export default function Reseller({ toggleTheme, theme }) {
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            {/* Credits pill */}
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm ${dark ? 'bg-white/[0.04] border-white/[0.08]' : 'bg-black/[0.03] border-black/[0.08]'}`}>
-                                <FaGem className="text-red-400" size={13} />
-                                <span className="text-red-400 font-bold">{reseller?.credits ?? 0}</span>
-                                <span className={dark ? 'text-white/20' : 'text-black/20'}>|</span>
-                                <span className={`font-medium text-xs ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{reseller?.username}</span>
-                            </div>
                             <button onClick={toggleTheme} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'}`}>
                                 {dark ? <MdWbSunny size={17} /> : <MdNightlight size={17} />}
                             </button>
