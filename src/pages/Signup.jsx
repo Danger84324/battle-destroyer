@@ -30,11 +30,14 @@ const FEATURES = [
 /* ── Reusable video logo ── */
 function VideoLogo({ className = '' }) {
   return (
-    <img
-      src="/logo.gif"
-      alt="logo"
+    <video
+      src="/logo.mp4"
+      autoPlay
+      loop
+      muted
+      playsInline
       className={className}
-      style={{ display: 'block' }}
+      style={{ background: 'transparent', display: 'block' }}
     />
   );
 }
