@@ -27,12 +27,8 @@ const FEATURES = [
   { icon: FaShieldAlt, text: 'Access to Attack Hub' },
 ];
 
-/* ── Reusable video logo component ── */
-function VideoLogo({ size = 'md' }) {
-  const sizeMap = {
-    sm: 'w-14 h-14',
-    md: 'w-44 h-44',
-  };
+/* ── Reusable video logo ── */
+function VideoLogo({ className = '' }) {
   return (
     <video
       src="/logo.mp4"
@@ -40,7 +36,8 @@ function VideoLogo({ size = 'md' }) {
       loop
       muted
       playsInline
-      className={`${sizeMap[size]} object-contain`}
+      className={className}
+      style={{ background: 'transparent', display: 'block' }}
     />
   );
 }
@@ -132,7 +129,7 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
       <AnimatedBackground intensity={0.6} />
       <div className="fixed inset-0 bg-grid opacity-20 pointer-events-none z-0" />
 
-      {/* ── Left panel ── */}
+      {/* ── Left panel (desktop only) ── */}
       <div className="hidden lg:flex lg:w-[42%] relative items-center justify-center overflow-hidden z-10">
         <div
           className="absolute inset-0"
@@ -144,15 +141,9 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
         />
 
         <div className="relative text-center px-10 z-10">
-          {/* ── Large video logo on left panel ── */}
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div
-                className="absolute inset-0 rounded-3xl blur-2xl"
-                style={{ background: 'rgba(220,38,38,0.18)' }}
-              />
-              <VideoLogo size="md" />
-            </div>
+          {/* Large video logo — no wrapper box, no border-radius clipping */}
+          <div className="flex justify-center mb-4">
+            <VideoLogo className="w-48 h-48 object-contain rounded-none" />
           </div>
 
           <h2
@@ -198,13 +189,11 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
 
         <div className="w-full max-w-sm py-4">
 
-          {/* ── Mobile video logo ── */}
-          <div className="lg:hidden text-center mb-6">
-            <div className="flex justify-center mb-2">
-              <VideoLogo size="sm" />
-            </div>
+          {/* ── Mobile logo — bigger, centered, full width so nothing clips ── */}
+          <div className="lg:hidden flex flex-col items-center mb-6">
+            <VideoLogo className="w-32 h-32 object-contain" />
             <h1
-              className="text-2xl font-bold text-red-500 tracking-[0.12em]"
+              className="text-2xl font-bold text-red-500 tracking-[0.12em] mt-2"
               style={{ fontFamily: "'Rajdhani', sans-serif" }}
             >
               BATTLE-DESTROYER
