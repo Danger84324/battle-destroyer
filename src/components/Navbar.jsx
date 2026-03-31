@@ -8,16 +8,13 @@ import {
   FaUser,
   FaBars,
   FaTimes,
-  FaCircle,
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export default function Navbar({ toggleTheme, theme, setIsAuth }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [liveUsers, setLiveUsers] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -34,31 +31,6 @@ export default function Navbar({ toggleTheme, theme, setIsAuth }) {
 
   // Close menu on route change
   useEffect(() => setMenuOpen(false), [location.pathname]);
-
-  // Fetch live users from backend — polls every 30s
-  useEffect(() => {
-    const fetchLiveUsers = async () => {
-      try {
-        const headers = {};
-        const token = localStorage.getItem('token');
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const res = await fetch(`${API_URL}/api/stats/live-users`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          // Support different response shapes: { liveUsers }, { activeUsers }, { count }
-          const count = data.liveUsers ?? data.activeUsers ?? data.count ?? null;
-          setLiveUsers(count);
-        }
-      } catch {
-        // Silently fail — badge simply won't show if endpoint missing
-      }
-    };
-
-    fetchLiveUsers();
-    const interval = setInterval(fetchLiveUsers, 30_000);
-    return () => clearInterval(interval);
-  }, []);
 
   const logout = () => {
     localStorage.clear();
@@ -113,15 +85,6 @@ export default function Navbar({ toggleTheme, theme, setIsAuth }) {
               >
                 BATTLE-DESTROYER
               </span>
-              {/* Live users badge — only when data is available */}
-              {liveUsers !== null && (
-                <span className="flex items-center gap-1">
-                  <FaCircle className="text-green-500 animate-pulse" size={6} />
-                  <span className={`text-[10px] font-semibold tracking-wide ${dark ? 'text-green-400' : 'text-green-600'}`}>
-                    {liveUsers} online now
-                  </span>
-                </span>
-              )}
             </div>
           </Link>
 
@@ -278,15 +241,6 @@ export default function Navbar({ toggleTheme, theme, setIsAuth }) {
                     <FaGem size={10} /> {user.credits ?? 0} credits
                   </p>
                 </div>
-                {/* Live users — mobile */}
-                {liveUsers !== null && (
-                  <div className="flex items-center gap-1">
-                    <FaCircle className="text-green-500 animate-pulse" size={7} />
-                    <span className={`text-[10px] font-semibold ${dark ? 'text-green-400' : 'text-green-600'}`}>
-                      {liveUsers} online
-                    </span>
-                  </div>
-                )}
               </div>
 
               {allNavLinks.map(link => (
