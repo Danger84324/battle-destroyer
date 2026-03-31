@@ -12,12 +12,12 @@ import AnimatedBackground from '../components/AnimatedBackground';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const PLANS = [
-    { credits: 50,  label: 'Starter',  icon: FaBolt,   color: 'text-blue-400',   bg: 'from-blue-600/10 to-blue-600/5',     border: 'border-blue-600/20',   glow: 'rgba(59,130,246,0.3)'  },
-    { credits: 150, label: 'Basic',    icon: FaGem,    color: 'text-green-400',  bg: 'from-green-600/10 to-green-600/5',   border: 'border-green-600/20',  glow: 'rgba(16,185,129,0.3)'  },
-    { credits: 250, label: 'Standard', icon: FaFire,   color: 'text-orange-400', bg: 'from-orange-600/10 to-orange-600/5', border: 'border-orange-600/20', glow: 'rgba(249,115,22,0.3)',  popular: true },
-    { credits: 333, label: 'Advanced', icon: FaFire,   color: 'text-red-400',    bg: 'from-red-600/10 to-red-600/5',       border: 'border-red-600/20',    glow: 'rgba(239,68,68,0.3)'   },
-    { credits: 400, label: 'Pro',      icon: FaCrown,  color: 'text-yellow-400', bg: 'from-yellow-600/10 to-yellow-600/5', border: 'border-yellow-600/20', glow: 'rgba(234,179,8,0.3)'   },
-    { credits: 500, label: 'Elite',    icon: FaCrown,  color: 'text-purple-400', bg: 'from-purple-600/10 to-purple-600/5', border: 'border-purple-600/20', glow: 'rgba(168,85,247,0.3)'  },
+    { credits: 50, label: 'Starter', icon: FaBolt, color: 'text-blue-400', bg: 'from-blue-600/10 to-blue-600/5', border: 'border-blue-600/20', glow: 'rgba(59,130,246,0.3)' },
+    { credits: 150, label: 'Basic', icon: FaGem, color: 'text-green-400', bg: 'from-green-600/10 to-green-600/5', border: 'border-green-600/20', glow: 'rgba(16,185,129,0.3)' },
+    { credits: 250, label: 'Standard', icon: FaFire, color: 'text-orange-400', bg: 'from-orange-600/10 to-orange-600/5', border: 'border-orange-600/20', glow: 'rgba(249,115,22,0.3)', popular: true },
+    { credits: 333, label: 'Advanced', icon: FaFire, color: 'text-red-400', bg: 'from-red-600/10 to-red-600/5', border: 'border-red-600/20', glow: 'rgba(239,68,68,0.3)' },
+    { credits: 400, label: 'Pro', icon: FaCrown, color: 'text-yellow-400', bg: 'from-yellow-600/10 to-yellow-600/5', border: 'border-yellow-600/20', glow: 'rgba(234,179,8,0.3)' },
+    { credits: 500, label: 'Elite', icon: FaCrown, color: 'text-purple-400', bg: 'from-purple-600/10 to-purple-600/5', border: 'border-purple-600/20', glow: 'rgba(168,85,247,0.3)' },
 ];
 
 function Toast({ toasts }) {
@@ -150,10 +150,20 @@ export default function Reseller({ toggleTheme, theme }) {
         }
         setGiveLoading(true);
         try {
+
+            const csrfRes = await axios.get(`${API_URL}/api/csrf-token`, { withCredentials: true });
+            const csrfToken = csrfRes.data.csrfToken;
+
             const { data } = await axios.post(
                 `${API_URL}/api/reseller/give-credits`,
                 { userId: foundUser.userId || foundUser.email, planLabel: selectedPlan.label },
-                { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'X-CSRF-Token': csrfToken 
+                    },
+                    withCredentials: true
+                }
             );
             setReseller(prev => ({ ...prev, credits: data.resellerCreditsLeft, totalGiven: (prev.totalGiven || 0) + selectedPlan.credits }));
             setFoundUser(prev => ({ ...prev, credits: data.userNewCredits, isPro: true }));
@@ -405,12 +415,11 @@ export default function Reseller({ toggleTheme, theme }) {
                                                 <button key={i}
                                                     onClick={() => canAfford && setSelectedPlan(isSelected ? null : plan)}
                                                     disabled={!canAfford}
-                                                    className={`plan-card relative rounded-xl p-4 border text-left transition-all active:scale-95 ${
-                                                        !canAfford ? 'opacity-40 cursor-not-allowed' :
-                                                        isSelected
-                                                            ? dark ? `bg-gradient-to-br ${plan.bg} border-red-500/50 ring-2 ring-red-500/20` : `bg-gradient-to-br ${plan.bg} ${plan.border} ring-2 ring-red-500/20`
-                                                            : dark ? `bg-white/[0.02] border-white/[0.07] hover:border-white/[0.15] hover:bg-gradient-to-br hover:${plan.bg}` : `bg-slate-50 border-slate-200 hover:border-slate-300`
-                                                    }`}
+                                                    className={`plan-card relative rounded-xl p-4 border text-left transition-all active:scale-95 ${!canAfford ? 'opacity-40 cursor-not-allowed' :
+                                                            isSelected
+                                                                ? dark ? `bg-gradient-to-br ${plan.bg} border-red-500/50 ring-2 ring-red-500/20` : `bg-gradient-to-br ${plan.bg} ${plan.border} ring-2 ring-red-500/20`
+                                                                : dark ? `bg-white/[0.02] border-white/[0.07] hover:border-white/[0.15] hover:bg-gradient-to-br hover:${plan.bg}` : `bg-slate-50 border-slate-200 hover:border-slate-300`
+                                                        }`}
                                                     style={{ boxShadow: isSelected ? `0 0 20px ${plan.glow}` : 'none' }}
                                                 >
                                                     {plan.popular && (
@@ -443,10 +452,9 @@ export default function Reseller({ toggleTheme, theme }) {
                                     )}
 
                                     <button onClick={giveCredits} disabled={!selectedPlan || giveLoading}
-                                        className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${
-                                            !selectedPlan ? dark ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                            : 'bg-red-600 hover:bg-red-500 text-white'
-                                        }`}
+                                        className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${!selectedPlan ? dark ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                : 'bg-red-600 hover:bg-red-500 text-white'
+                                            }`}
                                         style={{ fontFamily: "'Rajdhani', sans-serif", boxShadow: selectedPlan ? '0 4px 20px rgba(220,38,38,0.35)' : 'none' }}>
                                         {giveLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaGem size={15} />}
                                         {giveLoading ? 'PROCESSING...' : selectedPlan ? `GIVE ${selectedPlan.label} PLAN (${selectedPlan.credits} CREDITS)` : 'SELECT A PLAN'}
@@ -489,8 +497,8 @@ export default function Reseller({ toggleTheme, theme }) {
                                 </div>
                                 <div className="space-y-2">
                                     {[
-                                        { credits: 3000,  inr: '5K',  usdt: '55$'  },
-                                        { credits: 7000,  inr: '10K', usdt: '108$' },
+                                        { credits: 3000, inr: '5K', usdt: '55$' },
+                                        { credits: 7000, inr: '10K', usdt: '108$' },
                                         { credits: 15000, inr: '15K', usdt: '160$' },
                                         { credits: 35000, inr: '20K', usdt: '215$' },
                                     ].map((pkg, i) => (
