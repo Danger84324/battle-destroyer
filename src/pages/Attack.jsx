@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
     FaExclamationTriangle, FaCheckCircle, FaTrash, FaHistory,
-    FaGem, FaBullseye, FaBan, FaLock, FaRocket, FaShieldAlt, FaUsers
+    FaGem, FaBullseye, FaBan, FaLock, FaRocket, FaShieldAlt, FaUsers, FaCrown
 } from 'react-icons/fa';
 import { MdRadar } from 'react-icons/md';
 import Navbar from '../components/Navbar';
@@ -346,6 +346,40 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                             </div>
                         </div>
 
+                        {/* ── Free Tier Warning ── */}
+                        {!user?.isPro && (
+                            <div className={`rounded-2xl p-4 sm:p-5 border flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 ${dark
+                                ? 'bg-yellow-500/[0.06] border-yellow-500/25'
+                                : 'bg-yellow-50 border-yellow-200'
+                                }`}>
+                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                    <div className="w-9 h-9 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                        <FaExclamationTriangle className="text-yellow-400" size={15} />
+                                    </div>
+                                    <div>
+                                        <p
+                                            className={`font-bold text-sm mb-0.5 ${dark ? 'text-yellow-300' : 'text-yellow-700'}`}
+                                            style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.05em' }}
+                                        >
+                                            FREE TIER — LIMITED ACCESS
+                                        </p>
+                                        <p className={`text-xs leading-relaxed ${dark ? 'text-yellow-400/70' : 'text-yellow-600'}`}>
+                                            You can only run attacks up to <span className="font-bold">60 seconds</span> on the free plan.
+                                            Upgrade to <span className="font-bold">Pro</span> to unlock <span className="font-bold">300 second</span> attacks and more.
+                                        </p>
+                                    </div>
+                                </div>
+                                <a
+                                    href="/contact"
+                                    className="shrink-0 inline-flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-4 py-2.5 rounded-xl transition-colors active:scale-95 whitespace-nowrap"
+                                    style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em' }}
+                                >
+                                    <FaCrown size={12} />
+                                    UPGRADE TO PRO
+                                </a>
+                            </div>
+                        )}
+
                         {/* ── Attack Config ── */}
                         <div className={`rounded-2xl p-5 sm:p-6 border transition-all ${cardCls}`}>
                             <div className="flex items-center gap-3 mb-5">
@@ -611,6 +645,6 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
 
                 <Footer theme={theme} />
             </div>
-        </div>
+        </div >
     );
 }
