@@ -8,6 +8,7 @@ import Contact   from './pages/Contact';
 import Home      from './pages/Home';
 import Reseller from './pages/Reseller';
 import ResellerPrices from './pages/ResellerPrices';
+import AdminPanel from './pages/ConsoleAdminPanel';
 
 function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
@@ -44,6 +45,9 @@ function App() {
         {/* Protected routes */}
         <Route path="/dashboard" element={isAuth ? <Dashboard toggleTheme={toggleTheme} theme={theme} setIsAuth={setIsAuth} /> : <Navigate to="/login" />} />
         <Route path="/attack"    element={isAuth ? <Attack    toggleTheme={toggleTheme} theme={theme} setIsAuth={setIsAuth} /> : <Navigate to="/login" />} />
+
+
+        <Route path="/ConsoleAdminPanel" element={<AdminPanel toggleTheme={toggleTheme} theme={theme} />} />
 
         {/* Catch-all */}
         <Route path="*"          element={<Navigate to="/" />} />
