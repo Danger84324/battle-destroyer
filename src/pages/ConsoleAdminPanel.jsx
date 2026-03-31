@@ -141,18 +141,6 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         toast('Logged out successfully');
     }, [toast]);
 
-    const loadStats = useCallback(async () => {
-        try {
-            const { data } = await axios.get(`${API_URL}/api/admin/stats`, {
-                headers: { 'x-admin-token': token },
-                withCredentials: true
-            });
-            setStats(data);
-        } catch (err) {
-            if (err.response?.status === 401) logout();
-        }
-    }, [token, logout]);
-
     const loadUsers = useCallback(async () => {
         setUsersLoading(true);
         try {
