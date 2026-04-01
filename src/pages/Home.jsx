@@ -1,4 +1,4 @@
-import React, { useEffect, useRef,useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     FaBullseye,
@@ -122,14 +122,16 @@ export default function Home({ toggleTheme, theme }) {
         { value: liveStats.totalAttacks.toLocaleString(), label: 'Attacks Launched', icon: FaBullseye },
         { value: '<10ms', label: 'Response Time', icon: MdSpeed },
     ];
-
     useEffect(() => {
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/panel/stats`)
+        const controller = new AbortController();
+
+        fetch(`${API_URL}/api/panel/stats`, { signal: controller.signal })
             .then(r => r.json())
             .then(d => setLiveStats(d))
             .catch(() => { });
-    }, []);
 
+        return () => controller.abort(); // Cancel on unmount
+    }, []);
     useEffect(() => {
         const ctx = gsap.context(() => {
 
@@ -300,11 +302,10 @@ export default function Home({ toggleTheme, theme }) {
                             <>
                                 <Link
                                     to="/dashboard"
-                                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                                        dark
-                                            ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
-                                            : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
-                                    }`}
+                                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${dark
+                                        ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                                        : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
+                                        }`}
                                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                                 >
                                     <FaBolt size={14} />
@@ -312,11 +313,10 @@ export default function Home({ toggleTheme, theme }) {
                                 </Link>
                                 <Link
                                     to="/attack"
-                                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                                        dark
-                                            ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
-                                            : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
-                                    }`}
+                                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${dark
+                                        ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                                        : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
+                                        }`}
                                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                                 >
                                     <FaBullseye size={14} />
@@ -324,11 +324,10 @@ export default function Home({ toggleTheme, theme }) {
                                 </Link>
                                 <Link
                                     to="/contact"
-                                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                                        dark
-                                            ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
-                                            : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
-                                    }`}
+                                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${dark
+                                        ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                                        : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
+                                        }`}
                                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                                 >
                                     <FaGem size={14} />
@@ -339,11 +338,10 @@ export default function Home({ toggleTheme, theme }) {
                             // Not logged in: show only Contact
                             <Link
                                 to="/contact"
-                                className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                                    dark
-                                        ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
-                                        : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
-                                }`}
+                                className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${dark
+                                    ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+                                    : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
+                                    }`}
                                 style={{ fontFamily: "'DM Sans', sans-serif" }}
                             >
                                 <FaGem size={14} />
