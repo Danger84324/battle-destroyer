@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import {
     FaSearch, FaSignOutAlt, FaLock, FaCheckCircle, FaExclamationTriangle,
-    FaEdit, FaTrash, FaPlus, FaTimes, FaSave, FaUserShield
+    FaEdit, FaTrash, FaPlus, FaTimes, FaSave, FaUserShield, FaChevronLeft, FaChevronRight
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
 import AnimatedBackground from '../components/AnimatedBackground';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const ITEMS_PER_PAGE = 50;
 
 function Toast({ toasts }) {
     return (
@@ -49,6 +50,31 @@ function Modal({ title, onClose, children, dark }) {
     );
 }
 
+// ── Pagination Component ──
+function Pagination({ currentPage, totalPages, onPageChange, dark }) {
+    if (totalPages <= 1) return null;
+    
+    return (
+        <div className="flex items-center justify-center gap-3 mt-6">
+            <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}
+                className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all disabled:opacity-50 ${dark
+                    ? 'bg-white/[0.05] text-slate-400 hover:bg-white/[0.1]'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                <FaChevronLeft size={12} /> Prev
+            </button>
+            <span className={`text-sm font-semibold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                Page {currentPage} of {totalPages}
+            </span>
+            <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}
+                className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all disabled:opacity-50 ${dark
+                    ? 'bg-white/[0.05] text-slate-400 hover:bg-white/[0.1]'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                Next <FaChevronRight size={12} />
+            </button>
+        </div>
+    );
+}
+
 export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const dark = theme !== 'light';
 
@@ -69,10 +95,18 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const [currentTab, setCurrentTab] = useState('users');
     const [toasts, setToasts] = useState([]);
 
+    // Pagination & Filter state
+    const [usersPage, setUsersPage] = useState(1);
+    const [resellersPage, setResellersPage] = useState(1);
+    const [usersTotalPages, setUsersTotalPages] = useState(1);
+    const [resellersTotalPages, setResellersTotalPages] = useState(1);
+    const [proFilter, setProFilter] = useState('all'); // 'all', 'pro', 'free'
+    const [resellerFilter, setResellerFilter] = useState('all'); // 'all', 'active', 'blocked'
+
     // Modal state
-    const [editUserModal, setEditUserModal] = useState(null);       // user object
-    const [editResellerModal, setEditResellerModal] = useState(null); // reseller object or 'new'
-    const [deleteConfirm, setDeleteConfirm] = useState(null);       // { type, id, name }
+    const [editUserModal, setEditUserModal] = useState(null);
+    const [editResellerModal, setEditResellerModal] = useState(null);
+    const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [modalLoading, setModalLoading] = useState(false);
 
     // Edit forms
@@ -95,12 +129,11 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         setIsLoggedIn(true);
         const init = async () => {
             try {
-                const [statsRes, usersRes] = await Promise.all([
+                const [statsRes] = await Promise.all([
                     axios.get(`${API_URL}/api/admin/stats`, { headers: { 'x-admin-token': savedToken }, withCredentials: true }),
-                    axios.get(`${API_URL}/api/admin/users`, { headers: { 'x-admin-token': savedToken }, withCredentials: true }),
                 ]);
                 setStats(statsRes.data);
-                setUsers(usersRes.data.users || []);
+                loadUsers(savedToken, '', 1, 'all');
             } catch (err) {
                 if (err.response?.status === 401) {
                     localStorage.removeItem('adminToken');
@@ -127,41 +160,67 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         toast('Logged out successfully');
     }, [toast]);
 
-    const loadUsers = useCallback(async (tkn, query) => {
+    const loadUsers = useCallback(async (tkn, query, page = 1, filter = 'all') => {
         const t = tkn ?? token;
         const q = query ?? searchQuery;
+        const p = page ?? usersPage;
+        const f = filter ?? proFilter;
+        
         setUsersLoading(true);
         try {
-            const url = q
-                ? `${API_URL}/api/admin/users?search=${encodeURIComponent(q)}`
-                : `${API_URL}/api/admin/users`;
-            const { data } = await axios.get(url, { headers: { 'x-admin-token': t }, withCredentials: true });
+            const params = new URLSearchParams({
+                page: p,
+                limit: ITEMS_PER_PAGE,
+                ...(q && { search: q }),
+                ...(f !== 'all' && { isPro: f === 'pro' ? 'true' : 'false' })
+            });
+            
+            const { data } = await axios.get(`${API_URL}/api/admin/users?${params}`, {
+                headers: { 'x-admin-token': t },
+                withCredentials: true
+            });
+            
             setUsers(data.users || []);
+            setUsersTotalPages(data.totalPages || 1);
+            setUsersPage(p);
         } catch (err) {
             if (err.response?.status === 401) logout();
             else toast(err.response?.data?.message || 'Failed to load users', 'error');
         } finally {
             setUsersLoading(false);
         }
-    }, [token, searchQuery, toast, logout]);
+    }, [token, searchQuery, proFilter, logout, toast]);
 
-    const loadResellers = useCallback(async (tkn, query) => {
+    const loadResellers = useCallback(async (tkn, query, page = 1, filter = 'all') => {
         const t = tkn ?? token;
         const q = query ?? searchQuery;
+        const p = page ?? resellersPage;
+        const f = filter ?? resellerFilter;
+        
         setResellersLoading(true);
         try {
-            const url = q
-                ? `${API_URL}/api/admin/resellers?search=${encodeURIComponent(q)}`
-                : `${API_URL}/api/admin/resellers`;
-            const { data } = await axios.get(url, { headers: { 'x-admin-token': t }, withCredentials: true });
+            const params = new URLSearchParams({
+                page: p,
+                limit: ITEMS_PER_PAGE,
+                ...(q && { search: q }),
+                ...(f !== 'all' && { isBlocked: f === 'blocked' ? 'true' : 'false' })
+            });
+            
+            const { data } = await axios.get(`${API_URL}/api/admin/resellers?${params}`, {
+                headers: { 'x-admin-token': t },
+                withCredentials: true
+            });
+            
             setResellers(data.resellers || []);
+            setResellersTotalPages(data.totalPages || 1);
+            setResellersPage(p);
         } catch (err) {
             if (err.response?.status === 401) logout();
             else toast(err.response?.data?.message || 'Failed to load resellers', 'error');
         } finally {
             setResellersLoading(false);
         }
-    }, [token, searchQuery, toast, logout]);
+    }, [token, searchQuery, resellerFilter, logout, toast]);
 
     const loadStats = useCallback(async () => {
         try {
@@ -189,12 +248,11 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             setAdminSecret('');
             localStorage.setItem('adminToken', data.token);
             toast('Login successful!');
-            const [statsRes, usersRes] = await Promise.all([
+            const [statsRes] = await Promise.all([
                 axios.get(`${API_URL}/api/admin/stats`, { headers: { 'x-admin-token': data.token }, withCredentials: true }),
-                axios.get(`${API_URL}/api/admin/users`, { headers: { 'x-admin-token': data.token }, withCredentials: true }),
             ]);
             setStats(statsRes.data);
-            setUsers(usersRes.data.users || []);
+            loadUsers(data.token, '', 1, 'all');
         } catch (err) {
             setLoginError(err.response?.data?.message || 'Login failed');
             toast(err.response?.data?.message || 'Login failed', 'error');
@@ -218,7 +276,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const saveUser = async () => {
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken(); // ← add this
+            const csrfToken = await getCsrfToken();
 
             const payload = {
                 username: userForm.username,
@@ -231,13 +289,13 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             await axios.patch(`${API_URL}/api/admin/users/${editUserModal._id}`, payload, {
                 headers: {
                     'x-admin-token': token,
-                    'X-CSRF-Token': csrfToken  // ← add this
+                    'X-CSRF-Token': csrfToken
                 },
                 withCredentials: true
             });
             toast('User updated successfully');
             setEditUserModal(null);
-            loadUsers();
+            loadUsers(token, searchQuery, usersPage, proFilter);
             loadStats();
         } catch (err) {
             toast(err.response?.data?.message || 'Failed to update user', 'error');
@@ -266,7 +324,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const saveReseller = async () => {
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken(); // ← add this
+            const csrfToken = await getCsrfToken();
 
             if (editResellerModal === 'new') {
                 const payload = {
@@ -278,7 +336,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                 await axios.post(`${API_URL}/api/admin/resellers`, payload, {
                     headers: {
                         'x-admin-token': token,
-                        'X-CSRF-Token': csrfToken  // ← add this
+                        'X-CSRF-Token': csrfToken
                     },
                     withCredentials: true
                 });
@@ -295,14 +353,14 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                 await axios.patch(`${API_URL}/api/admin/resellers/${editResellerModal._id}`, payload, {
                     headers: {
                         'x-admin-token': token,
-                        'X-CSRF-Token': csrfToken  // ← add this
+                        'X-CSRF-Token': csrfToken
                     },
                     withCredentials: true
                 });
                 toast('Reseller updated successfully');
             }
             setEditResellerModal(null);
-            loadResellers();
+            loadResellers(token, searchQuery, resellersPage, resellerFilter);
             loadStats();
         } catch (err) {
             toast(err.response?.data?.message || 'Failed to save reseller', 'error');
@@ -318,7 +376,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         if (!deleteConfirm) return;
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken(); // ← add this
+            const csrfToken = await getCsrfToken();
 
             const url = deleteConfirm.type === 'user'
                 ? `${API_URL}/api/admin/users/${deleteConfirm.id}`
@@ -327,14 +385,14 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             await axios.delete(url, {
                 headers: {
                     'x-admin-token': token,
-                    'X-CSRF-Token': csrfToken  // ← add this
+                    'X-CSRF-Token': csrfToken
                 },
                 withCredentials: true
             });
             toast(`${deleteConfirm.type === 'user' ? 'User' : 'Reseller'} deleted successfully`);
             setDeleteConfirm(null);
-            if (deleteConfirm.type === 'user') loadUsers();
-            else loadResellers();
+            if (deleteConfirm.type === 'user') loadUsers(token, searchQuery, 1, proFilter);
+            else loadResellers(token, searchQuery, 1, resellerFilter);
             loadStats();
         } catch (err) {
             toast(err.response?.data?.message || 'Failed to delete', 'error');
@@ -356,6 +414,12 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500'}`;
 
     const labelCls = `block text-xs font-semibold uppercase tracking-[0.08em] mb-1.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`;
+
+    const filterBtnCls = (active) => `px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${active
+        ? 'bg-red-600 text-white'
+        : dark
+            ? 'bg-white/[0.05] text-slate-400 hover:bg-white/[0.1]'
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
 
     // ── LOGIN SCREEN ──
     if (!isLoggedIn) {
@@ -469,8 +533,14 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                                     onClick={() => {
                                         setCurrentTab(tab.id);
                                         setSearchQuery('');
-                                        if (tab.id === 'resellers') loadResellers(token, '');
-                                        else loadUsers(token, '');
+                                        if (tab.id === 'resellers') {
+                                            setResellerFilter('all');
+                                            loadResellers(token, '', 1, 'all');
+                                        }
+                                        else {
+                                            setProFilter('all');
+                                            loadUsers(token, '', 1, 'all');
+                                        }
                                     }}
                                     className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all ${currentTab === tab.id
                                         ? 'bg-red-600 text-white'
@@ -489,154 +559,192 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                         )}
                     </div>
 
-                    {/* Search */}
-                    <div className={`rounded-2xl p-5 border mb-6 transition-all flex gap-3 ${cardCls}`}>
-                        <div className="flex-1 relative">
-                            <FaSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${dark ? 'text-slate-600' : 'text-slate-400'}`} size={14} />
-                            <input type="text"
-                                placeholder={currentTab === 'users' ? 'Search users by name, email, ID...' : 'Search resellers by name, email...'}
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && (currentTab === 'users' ? loadUsers() : loadResellers())}
-                                className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm border outline-none transition ${dark
-                                    ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/50'
-                                    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500'}`}
-                            />
+                    {/* Search & Filters */}
+                    <div className={`rounded-2xl p-5 border mb-6 transition-all space-y-3 ${cardCls}`}>
+                        <div className="flex gap-3 flex-wrap">
+                            <div className="flex-1 relative min-w-[250px]">
+                                <FaSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${dark ? 'text-slate-600' : 'text-slate-400'}`} size={14} />
+                                <input type="text"
+                                    placeholder={currentTab === 'users' ? 'Search users by name, email, ID...' : 'Search resellers by name, email...'}
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && (currentTab === 'users' ? loadUsers(token, searchQuery, 1, proFilter) : loadResellers(token, searchQuery, 1, resellerFilter))}
+                                    className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm border outline-none transition ${dark
+                                        ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/50'
+                                        : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500'}`}
+                                />
+                            </div>
+                            <button onClick={() => currentTab === 'users' ? loadUsers(token, searchQuery, 1, proFilter) : loadResellers(token, searchQuery, 1, resellerFilter)}
+                                className="px-4 py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-500 transition-all">
+                                Search
+                            </button>
                         </div>
-                        <button onClick={() => currentTab === 'users' ? loadUsers() : loadResellers()}
-                            className="px-4 py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-500 transition-all">
-                            Search
-                        </button>
+
+                        {/* User Filters */}
+                        {currentTab === 'users' && (
+                            <div className="flex gap-2 flex-wrap">
+                                <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Filter:</span>
+                                <button onClick={() => { setProFilter('all'); loadUsers(token, searchQuery, 1, 'all'); }}
+                                    className={filterBtnCls(proFilter === 'all')}>All Users</button>
+                                <button onClick={() => { setProFilter('pro'); loadUsers(token, searchQuery, 1, 'pro'); }}
+                                    className={filterBtnCls(proFilter === 'pro')}>⭐ Pro Users</button>
+                                <button onClick={() => { setProFilter('free'); loadUsers(token, searchQuery, 1, 'free'); }}
+                                    className={filterBtnCls(proFilter === 'free')}>Free Users</button>
+                            </div>
+                        )}
+
+                        {/* Reseller Filters */}
+                        {currentTab === 'resellers' && (
+                            <div className="flex gap-2 flex-wrap">
+                                <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Filter:</span>
+                                <button onClick={() => { setResellerFilter('all'); loadResellers(token, searchQuery, 1, 'all'); }}
+                                    className={filterBtnCls(resellerFilter === 'all')}>All Resellers</button>
+                                <button onClick={() => { setResellerFilter('active'); loadResellers(token, searchQuery, 1, 'active'); }}
+                                    className={filterBtnCls(resellerFilter === 'active')}>✅ Active</button>
+                                <button onClick={() => { setResellerFilter('blocked'); loadResellers(token, searchQuery, 1, 'blocked'); }}
+                                    className={filterBtnCls(resellerFilter === 'blocked')}>🔒 Blocked</button>
+                            </div>
+                        )}
                     </div>
 
                     {/* ── Users Table ── */}
                     {currentTab === 'users' && (
-                        <div className={`rounded-2xl border overflow-hidden transition-all ${cardCls}`}>
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className={dark ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50 border-b border-slate-200'}>
-                                            {['Username', 'Email', 'Credits', 'Status', 'Joined', 'Actions'].map(h => (
-                                                <th key={h} className={`px-5 py-4 text-left text-xs font-bold uppercase tracking-wider ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {usersLoading ? (
-                                            <tr><td colSpan={6} className="px-6 py-8 text-center">
-                                                <div className="inline-flex items-center gap-2">
-                                                    <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                                                    <span className={dark ? 'text-slate-400' : 'text-slate-500'}>Loading...</span>
-                                                </div>
-                                            </td></tr>
-                                        ) : users.length === 0 ? (
-                                            <tr><td colSpan={6} className={`px-6 py-8 text-center ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No users found</td></tr>
-                                        ) : (
-                                            users.map(user => (
-                                                <tr key={user._id} className={`border-t ${dark ? 'border-white/[0.06] hover:bg-white/[0.02]' : 'border-slate-200 hover:bg-slate-50'} transition`}>
-                                                    <td className={`px-5 py-4 font-semibold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>{user.username}</td>
-                                                    <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{user.email}</td>
-                                                    <td className="px-5 py-4">
-                                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
-                                                            💎 {user.credits || 0}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-5 py-4">
-                                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${user.isPro
-                                                            ? (dark ? 'bg-yellow-500/10 text-yellow-400' : 'bg-yellow-50 text-yellow-600')
-                                                            : (dark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600')}`}>
-                                                            {user.isPro ? '⭐ Pro' : 'Free'}
-                                                        </span>
-                                                    </td>
-                                                    <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-                                                        {new Date(user.createdAt).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="px-5 py-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <button onClick={() => openEditUser(user)}
-                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dark ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'}`}
-                                                                title="Edit user">
-                                                                <FaEdit size={12} />
-                                                            </button>
-                                                            <button onClick={() => confirmDelete('user', user._id, user.username)}
-                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dark ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400' : 'bg-red-50 hover:bg-red-100 text-red-600'}`}
-                                                                title="Delete user">
-                                                                <FaTrash size={11} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
+                        <div>
+                            <div className={`rounded-2xl border overflow-hidden transition-all ${cardCls}`}>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className={dark ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50 border-b border-slate-200'}>
+                                                {['Username', 'Email', 'Credits', 'Status', 'Joined', 'Actions'].map(h => (
+                                                    <th key={h} className={`px-5 py-4 text-left text-xs font-bold uppercase tracking-wider ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {usersLoading ? (
+                                                <tr><td colSpan={6} className="px-6 py-8 text-center">
+                                                    <div className="inline-flex items-center gap-2">
+                                                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                                        <span className={dark ? 'text-slate-400' : 'text-slate-500'}>Loading...</span>
+                                                    </div>
+                                                </td></tr>
+                                            ) : users.length === 0 ? (
+                                                <tr><td colSpan={6} className={`px-6 py-8 text-center ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No users found</td></tr>
+                                            ) : (
+                                                users.map(user => (
+                                                    <tr key={user._id} className={`border-t ${dark ? 'border-white/[0.06] hover:bg-white/[0.02]' : 'border-slate-200 hover:bg-slate-50'} transition`}>
+                                                        <td className={`px-5 py-4 font-semibold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>{user.username}</td>
+                                                        <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{user.email}</td>
+                                                        <td className="px-5 py-4">
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
+                                                                💎 {user.credits || 0}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${user.isPro
+                                                                ? (dark ? 'bg-yellow-500/10 text-yellow-400' : 'bg-yellow-50 text-yellow-600')
+                                                                : (dark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600')}`}>
+                                                                {user.isPro ? '⭐ Pro' : 'Free'}
+                                                            </span>
+                                                        </td>
+                                                        <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                                                            {new Date(user.createdAt).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={() => openEditUser(user)}
+                                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dark ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'}`}
+                                                                    title="Edit user">
+                                                                    <FaEdit size={12} />
+                                                                </button>
+                                                                <button onClick={() => confirmDelete('user', user._id, user.username)}
+                                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dark ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400' : 'bg-red-50 hover:bg-red-100 text-red-600'}`}
+                                                                    title="Delete user">
+                                                                    <FaTrash size={11} />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
+                            <Pagination currentPage={usersPage} totalPages={usersTotalPages} 
+                                onPageChange={(page) => loadUsers(token, searchQuery, page, proFilter)} 
+                                dark={dark} />
                         </div>
                     )}
 
                     {/* ── Resellers Table ── */}
                     {currentTab === 'resellers' && (
-                        <div className={`rounded-2xl border overflow-hidden transition-all ${cardCls}`}>
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className={dark ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50 border-b border-slate-200'}>
-                                            {['Username', 'Email', 'Credits', 'Given', 'Status', 'Last Login', 'Actions'].map(h => (
-                                                <th key={h} className={`px-5 py-4 text-left text-xs font-bold uppercase tracking-wider ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {resellersLoading ? (
-                                            <tr><td colSpan={7} className="px-6 py-8 text-center">
-                                                <div className="inline-flex items-center gap-2">
-                                                    <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                                                    <span className={dark ? 'text-slate-400' : 'text-slate-500'}>Loading...</span>
-                                                </div>
-                                            </td></tr>
-                                        ) : resellers.length === 0 ? (
-                                            <tr><td colSpan={7} className={`px-6 py-8 text-center ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No resellers found</td></tr>
-                                        ) : (
-                                            resellers.map(reseller => (
-                                                <tr key={reseller._id} className={`border-t ${dark ? 'border-white/[0.06] hover:bg-white/[0.02]' : 'border-slate-200 hover:bg-slate-50'} transition`}>
-                                                    <td className={`px-5 py-4 font-semibold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>{reseller.username}</td>
-                                                    <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{reseller.email}</td>
-                                                    <td className="px-5 py-4">
-                                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
-                                                            💎 {reseller.credits || 0}
-                                                        </span>
-                                                    </td>
-                                                    <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>💸 {reseller.totalGiven || 0}</td>
-                                                    <td className="px-5 py-4">
-                                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${reseller.isBlocked
-                                                            ? (dark ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-600')
-                                                            : (dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600')}`}>
-                                                            {reseller.isBlocked ? '🔒 Blocked' : '✅ Active'}
-                                                        </span>
-                                                    </td>
-                                                    <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-                                                        {reseller.lastLogin ? new Date(reseller.lastLogin).toLocaleDateString() : 'Never'}
-                                                    </td>
-                                                    <td className="px-5 py-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <button onClick={() => openEditReseller(reseller)}
-                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dark ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'}`}
-                                                                title="Edit reseller">
-                                                                <FaEdit size={12} />
-                                                            </button>
-                                                            <button onClick={() => confirmDelete('reseller', reseller._id, reseller.username)}
-                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dark ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400' : 'bg-red-50 hover:bg-red-100 text-red-600'}`}
-                                                                title="Delete reseller">
-                                                                <FaTrash size={11} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
+                        <div>
+                            <div className={`rounded-2xl border overflow-hidden transition-all ${cardCls}`}>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className={dark ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50 border-b border-slate-200'}>
+                                                {['Username', 'Email', 'Credits', 'Given', 'Status', 'Last Login', 'Actions'].map(h => (
+                                                    <th key={h} className={`px-5 py-4 text-left text-xs font-bold uppercase tracking-wider ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {resellersLoading ? (
+                                                <tr><td colSpan={7} className="px-6 py-8 text-center">
+                                                    <div className="inline-flex items-center gap-2">
+                                                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                                        <span className={dark ? 'text-slate-400' : 'text-slate-500'}>Loading...</span>
+                                                    </div>
+                                                </td></tr>
+                                            ) : resellers.length === 0 ? (
+                                                <tr><td colSpan={7} className={`px-6 py-8 text-center ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No resellers found</td></tr>
+                                            ) : (
+                                                resellers.map(reseller => (
+                                                    <tr key={reseller._id} className={`border-t ${dark ? 'border-white/[0.06] hover:bg-white/[0.02]' : 'border-slate-200 hover:bg-slate-50'} transition`}>
+                                                        <td className={`px-5 py-4 font-semibold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>{reseller.username}</td>
+                                                        <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{reseller.email}</td>
+                                                        <td className="px-5 py-4">
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
+                                                                💎 {reseller.credits || 0}
+                                                            </span>
+                                                        </td>
+                                                        <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>💸 {reseller.totalGiven || 0}</td>
+                                                        <td className="px-5 py-4">
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${reseller.isBlocked
+                                                                ? (dark ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-600')
+                                                                : (dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600')}`}>
+                                                                {reseller.isBlocked ? '🔒 Blocked' : '✅ Active'}
+                                                            </span>
+                                                        </td>
+                                                        <td className={`px-5 py-4 text-sm ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                                                            {reseller.lastLogin ? new Date(reseller.lastLogin).toLocaleDateString() : 'Never'}
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={() => openEditReseller(reseller)}
+                                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dark ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'}`}
+                                                                    title="Edit reseller">
+                                                                    <FaEdit size={12} />
+                                                                </button>
+                                                                <button onClick={() => confirmDelete('reseller', reseller._id, reseller.username)}
+                                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dark ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400' : 'bg-red-50 hover:bg-red-100 text-red-600'}`}
+                                                                    title="Delete reseller">
+                                                                    <FaTrash size={11} />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
+                            <Pagination currentPage={resellersPage} totalPages={resellersTotalPages} 
+                                onPageChange={(page) => loadResellers(token, searchQuery, page, resellerFilter)} 
+                                dark={dark} />
                         </div>
                     )}
                 </div>
