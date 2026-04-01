@@ -21,9 +21,9 @@ import AnimatedBackground from '../components/AnimatedBackground';
 const TOKEN_MAX_AGE_MS = 270_000;
 
 const FEATURES = [
-  { icon: FaGift,     text: '3 free credits on signup' },
-  { icon: FaLink,     text: '+2 credits per referral' },
-  { icon: FaLock,     text: 'Device fingerprint protection' },
+  { icon: FaGift, text: '3 free credits on signup' },
+  { icon: FaLink, text: '+2 credits per referral' },
+  { icon: FaLock, text: 'Device fingerprint protection' },
   { icon: FaShieldAlt, text: 'Access to Attack Hub' },
 ];
 
@@ -38,6 +38,7 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
   const captchaTokenRef = useRef('');
   const captchaIssuedRef = useRef(null);
   const expiryTimerRef = useRef(null);
+  const turnstileRef = useRef(null);
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
     captchaIssuedRef.current = null;
     setCaptchaReady(false);
     clearTimeout(expiryTimerRef.current);
-    if (window.turnstile) window.turnstile.reset();
+    turnstileRef.current?.reset(); // ← CHANGE THIS (was window.turnstile.reset())
   }, []);
 
   const handleVerify = useCallback((token) => {
@@ -103,11 +104,10 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
     }
   };
 
-  const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${
-    dark
+  const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${dark
       ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/10'
       : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
-  }`;
+    }`;
 
   return (
     <div className={`relative min-h-screen flex transition-colors duration-300 ${dark ? 'bg-surface-950' : 'bg-slate-50'}`}>
@@ -162,9 +162,8 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
       <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 relative z-10 overflow-y-auto">
         <button
           onClick={toggleTheme}
-          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-            dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
-          }`}
+          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
+            }`}
         >
           {dark ? <MdWbSunny size={17} /> : <MdNightlight size={17} />}
         </button>
@@ -222,7 +221,7 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
             </div>
 
             <div>
-              <TurnstileWidget onVerify={handleVerify} onExpire={resetCaptcha} onError={resetCaptcha} />
+              <TurnstileWidget ref={turnstileRef} onVerify={handleVerify} onExpire={resetCaptcha} onError={resetCaptcha} />
               {!captchaReady && (
                 <p className={`text-xs mt-1.5 flex items-center gap-1.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
                   <FaShieldAlt size={11} />
