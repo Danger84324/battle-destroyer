@@ -9,6 +9,7 @@ import {
   FaArrowRight,
   FaShieldAlt,
   FaExclamationCircle,
+  FaCheckCircle,
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
 import TurnstileWidget from '../components/TurnstileWidget';
@@ -83,17 +84,15 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
     }
   };
 
-  const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${
-    dark
+  const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${dark
       ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/10'
       : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
-  }`;
+    }`;
 
   return (
     <div
-      className={`relative min-h-screen flex transition-colors duration-300 ${
-        dark ? 'bg-surface-950' : 'bg-slate-50'
-      }`}
+      className={`relative min-h-screen flex transition-colors duration-300 ${dark ? 'bg-surface-950' : 'bg-slate-50'
+        }`}
     >
       <AnimatedBackground intensity={0.6} />
 
@@ -108,7 +107,6 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
             background: 'linear-gradient(135deg, rgba(127,29,29,0.25) 0%, rgba(8,8,15,0.95) 60%, rgba(4,4,10,1) 100%)',
           }}
         />
-        {/* Decorative circles */}
         <div
           className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.08) 0%, transparent 70%)' }}
@@ -174,12 +172,10 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
 
       {/* ── Right panel (form) ── */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 relative z-10">
-        {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-            dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
-          }`}
+          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
+            }`}
         >
           {dark ? <MdWbSunny size={17} /> : <MdNightlight size={17} />}
         </button>
@@ -196,7 +192,6 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
             </h1>
           </div>
 
-          {/* Heading */}
           <h2
             className={`text-3xl font-bold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}
             style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.03em' }}
@@ -207,7 +202,6 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
             Login to your warrior account
           </p>
 
-          {/* Error */}
           {error && (
             <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 mb-5 text-sm">
               <FaExclamationCircle size={15} className="shrink-0" />
@@ -232,28 +226,45 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
               />
             </div>
 
-            {/* CAPTCHA */}
+            {/* ── CAPTCHA SECTION ── */}
             <div>
-              <TurnstileWidget
-                ref={turnstileRef}
-                onVerify={handleVerify}
-                onExpire={resetCaptcha}
-                onError={resetCaptcha}
-              />
-              {!captchaReady ? (
-                <p className={`text-xs mt-1.5 flex items-center gap-1.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  <FaShieldAlt size={11} />
-                  Complete the CAPTCHA to enable login
-                </p>
-              ) : (
-                <p className="text-green-500 text-xs mt-1.5 flex items-center gap-1.5">
-                  <FaShieldAlt size={11} />
-                  CAPTCHA verified
-                </p>
-              )}
+              <label className={`bd-label flex items-center gap-1.5 mb-1.5 ${dark ? '' : 'text-slate-500'}`}>
+                <FaShieldAlt size={10} className="text-red-500/70" />
+                Human Verification
+              </label>
+
+              <div
+                className={`rounded-xl border overflow-hidden transition-all duration-200 ${captchaReady
+                    ? 'border-green-500/30 bg-green-500/[0.04]'
+                    : dark
+                      ? 'border-white/[0.1] bg-white/[0.03]'
+                      : 'border-slate-200 bg-slate-50'
+                  }`}
+              >
+                <div className={`px-2 pt-2 ${dark ? 'bg-white/[0.02]' : 'bg-white'}`}>
+                  <TurnstileWidget
+                    ref={turnstileRef}
+                    onVerify={handleVerify}
+                    onExpire={resetCaptcha}
+                    onError={resetCaptcha}
+                    theme={theme}
+                  />
+                </div>
+
+                <div
+                  className={`flex items-center gap-2 px-3 py-2 text-xs border-t transition-colors duration-300 ${captchaReady
+                      ? 'border-green-500/20 text-green-400'
+                      : dark
+                        ? 'border-white/[0.06] text-slate-600'
+                        : 'border-slate-100 text-slate-400'
+                    }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${captchaReady ? 'bg-green-400' : 'bg-current'}`} />
+                  {captchaReady ? 'Verified — you\'re cleared to proceed' : 'Complete the check above to enable login'}
+                </div>
+              </div>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading || !captchaReady}

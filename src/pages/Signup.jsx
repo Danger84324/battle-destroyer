@@ -60,7 +60,7 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
     captchaIssuedRef.current = null;
     setCaptchaReady(false);
     clearTimeout(expiryTimerRef.current);
-    turnstileRef.current?.reset(); // ← CHANGE THIS (was window.turnstile.reset())
+    turnstileRef.current?.reset();
   }, []);
 
   const handleVerify = useCallback((token) => {
@@ -105,8 +105,8 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
   };
 
   const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${dark
-      ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/10'
-      : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
+    ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/10'
+    : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
     }`;
 
   return (
@@ -220,14 +220,43 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
               <input name="referralCode" value={form.referralCode} onChange={handle} placeholder="Enter referral code" className={inputCls} />
             </div>
 
+            {/* ── CAPTCHA SECTION ── */}
             <div>
-              <TurnstileWidget ref={turnstileRef} onVerify={handleVerify} onExpire={resetCaptcha} onError={resetCaptcha} />
-              {!captchaReady && (
-                <p className={`text-xs mt-1.5 flex items-center gap-1.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  <FaShieldAlt size={11} />
-                  Complete the CAPTCHA to enable signup
-                </p>
-              )}
+              <label className={`bd-label flex items-center gap-1.5 mb-1.5 ${dark ? '' : 'text-slate-500'}`}>
+                <FaShieldAlt size={10} className="text-red-500/70" />
+                Human Verification
+              </label>
+
+              <div
+                className={`rounded-xl border overflow-hidden transition-all duration-200 ${captchaReady
+                    ? 'border-green-500/30 bg-green-500/[0.04]'
+                    : dark
+                      ? 'border-white/[0.1] bg-white/[0.03]'
+                      : 'border-slate-200 bg-slate-50'
+                  }`}
+              >
+                <div className={`px-2 pt-2 ${dark ? 'bg-white/[0.02]' : 'bg-white'}`}>
+                  <TurnstileWidget
+                    ref={turnstileRef}
+                    onVerify={handleVerify}
+                    onExpire={resetCaptcha}
+                    onError={resetCaptcha}
+                    theme={theme}
+                  />
+                </div>
+
+                <div
+                  className={`flex items-center gap-2 px-3 py-2 text-xs border-t transition-colors duration-300 ${captchaReady
+                      ? 'border-green-500/20 text-green-400'
+                      : dark
+                        ? 'border-white/[0.06] text-slate-600'
+                        : 'border-slate-100 text-slate-400'
+                    }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${captchaReady ? 'bg-green-400' : 'bg-current'}`} />
+                  {captchaReady ? 'Verified — you\'re cleared to proceed' : 'Complete the check above to enable login'}
+                </div>
+              </div>
             </div>
 
             <button
