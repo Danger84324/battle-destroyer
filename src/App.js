@@ -47,7 +47,7 @@ function App() {
         <Route path="/attack"    element={isAuth ? <Attack    toggleTheme={toggleTheme} theme={theme} setIsAuth={setIsAuth} /> : <Navigate to="/login" />} />
 
 
-        <Route path="/ConsoleAdminPanel" element={<AdminPanel toggleTheme={toggleTheme} theme={theme} />} />
+        <Route path="/ConsoleAdminPanel-0987" element={<AdminPanel toggleTheme={toggleTheme} theme={theme} />} />
 
         {/* Catch-all */}
         <Route path="*"          element={<Navigate to="/" />} />
