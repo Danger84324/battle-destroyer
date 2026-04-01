@@ -148,7 +148,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         axios.get(`${API_URL}/api/panel/stats`)
             .then(r => setStats(r.data))
             .catch(() => { });
-    }, []);
+    }, [API_URL]);
 
     const handle = e => {
         setForm({ ...form, [e.target.name]: e.target.value });
