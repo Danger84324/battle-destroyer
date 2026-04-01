@@ -70,7 +70,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
 
         fetchStats();
         // Run ONLY on mount, not on API_URL changes
-    }, []); // ✅ FIXED: Empty dependency array
+    }, [API_URL]); // ✅ FIXED: Empty dependency array
 
     // ── Fetch user and check attack status ──
     useEffect(() => {
@@ -94,7 +94,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         };
 
         fetchUserAndStatus();
-    }, [navigate, API_URL]);
+    }, [navigate, API_URL, checkAttackStatus]);
 
     // ── Cleanup all intervals and timers on unmount ──
     useEffect(() => {

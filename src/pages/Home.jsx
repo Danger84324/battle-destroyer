@@ -132,7 +132,8 @@ export default function Home({ toggleTheme, theme }) {
             .catch(() => { });
 
         return () => controller.abort(); // Cancel on unmount
-    }, []);
+    }, [API_URL]);
+    
     useEffect(() => {
         const ctx = gsap.context(() => {
 
