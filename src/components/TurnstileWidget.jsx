@@ -1,14 +1,10 @@
-// ─── TurnstileWidget.jsx ─────────────────────────────────────────────────────
-// FIX: expose a reset() method via ref so the parent can reset the exact widget
-// by its ID instead of calling window.turnstile.reset() with no arguments,
-// which silently does nothing.
-
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 
 const TurnstileWidget = forwardRef(function TurnstileWidget({ onVerify, onExpire, onError }, ref) {
     const containerRef = useRef(null);
     const widgetId     = useRef(null);
-    const [ready, setReady] = useState(false);
+    const [ready, setReady]       = useState(false);
+    const [clicked, setClicked]   = useState(false); // ← NEW
 
     const onVerifyRef = useRef(onVerify);
     const onExpireRef = useRef(onExpire);
@@ -18,12 +14,13 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onVerify, onExpire
     useEffect(() => { onExpireRef.current = onExpire; }, [onExpire]);
     useEffect(() => { onErrorRef.current  = onError;  }, [onError]);
 
-    // FIX: expose reset() to parent via ref
     useImperativeHandle(ref, () => ({
         reset() {
             if (widgetId.current !== null && window.turnstile) {
                 try { window.turnstile.reset(widgetId.current); } catch {}
             }
+            setClicked(false); // ← reset back to click state
+            widgetId.current = null;
         }
     }), []);
 
@@ -35,8 +32,9 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onVerify, onExpire
         return () => clearInterval(interval);
     }, []);
 
+    // Only render when clicked
     useEffect(() => {
-        if (!ready || !containerRef.current || widgetId.current !== null) return;
+        if (!clicked || !ready || !containerRef.current || widgetId.current !== null) return;
 
         const timer = setTimeout(() => {
             try {
@@ -60,16 +58,32 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ onVerify, onExpire
                 widgetId.current = null;
             }
         };
-    }, [ready]);
+    }, [clicked, ready]);
 
     return (
         <div className="my-2">
-            {!ready && (
-                <div className="text-gray-500 text-xs py-2 animate-pulse">
-                    Loading CAPTCHA...
+            {/* Show click prompt until user clicks */}
+            {!clicked ? (
+                <div
+                    onClick={() => setClicked(true)}
+                    className="cursor-pointer flex items-center gap-3 px-4 py-3 rounded-xl border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.07] transition-all select-none"
+                >
+                    <div className="w-5 h-5 rounded border-2 border-slate-500 flex items-center justify-center shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-sm bg-transparent" />
+                    </div>
+                    <span className="text-slate-400 text-sm">Click to verify you're human</span>
+                    <img src="https://challenges.cloudflare.com/turnstile/e/favicon.ico" alt="cf" className="w-4 h-4 ml-auto opacity-50" />
                 </div>
+            ) : (
+                <>
+                    {!ready && (
+                        <div className="text-gray-500 text-xs py-2 animate-pulse">
+                            Loading CAPTCHA...
+                        </div>
+                    )}
+                    <div ref={containerRef} />
+                </>
             )}
-            <div ref={containerRef} />
         </div>
     );
 });
