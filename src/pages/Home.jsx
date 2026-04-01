@@ -25,7 +25,6 @@ gsap.registerPlugin(ScrollTrigger);
 
 
 
-
 /* ─── FEATURE DATA ─────────────────────────────── */
 const FEATURES = [
     {
@@ -115,6 +114,8 @@ export default function Home({ toggleTheme, theme }) {
     const featuresRef = useRef(null);
     const stepsRef = useRef(null);
     const ctaRef = useRef(null);
+    const API_URL = process.env.REACT_APP_API_URL
+
 
     const STATS = [
         { value: '99.9%', label: 'Uptime', icon: FaServer },
