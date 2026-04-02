@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
     FaBullseye,
     FaGem,
-    FaLink,
+    FaCalendarAlt,
     FaBolt,
     FaShieldAlt,
     FaCrown,
@@ -33,15 +33,15 @@ const FEATURES = [
         bg: 'from-yellow-600/10 to-yellow-600/5',
         border: 'border-yellow-600/20',
         title: 'Instant Launch',
-        desc: 'Configure IP, port, and duration — then deploy with a single click. Real-time countdown tracking included.',
+        desc: 'Configure IP, port, and duration — deploy with a single click. Real-time countdown tracking included.',
     },
     {
-        icon: FaGem,
+        icon: FaCrown,
         color: 'text-red-400',
         bg: 'from-red-600/10 to-red-600/5',
         border: 'border-red-600/20',
-        title: 'Credits System',
-        desc: 'Earn free credits on signup. Refer friends for bonus credits. Purchase more at any time via Telegram.',
+        title: 'Pro Subscription',
+        desc: 'Choose Weekly, Monthly, or Season Pro plans. Get 30 attacks/day with 300s max duration. Activate via Telegram.',
     },
     {
         icon: FaShieldAlt,
@@ -60,20 +60,20 @@ const FEATURES = [
         desc: 'Track your active attack with a real-time progress bar and countdown. Full history with timestamps.',
     },
     {
-        icon: FaLink,
+        icon: FaUsers,
         color: 'text-purple-400',
         bg: 'from-purple-600/10 to-purple-600/5',
         border: 'border-purple-600/20',
-        title: 'Referral Program',
-        desc: 'Share your unique referral link and earn +2 credits for every successful signup through your link.',
+        title: 'Reseller Program',
+        desc: 'Become a reseller — buy credits in bulk and distribute Pro plans to customers for 4×+ profit.',
     },
     {
-        icon: FaCrown,
+        icon: FaCalendarAlt,   // add this to imports
         color: 'text-orange-400',
         bg: 'from-orange-600/10 to-orange-600/5',
         border: 'border-orange-600/20',
-        title: 'Pro Tier',
-        desc: 'Unlock 300-second attack durations and extended capabilities by upgrading to Pro via Telegram.',
+        title: 'Flexible Plans',
+        desc: 'Weekly (₹850), Monthly (₹1800), or Season (₹2500) — pick what suits you and upgrade anytime.',
     },
 ];
 
@@ -83,19 +83,19 @@ const STEPS = [
         number: '01',
         icon: FaLock,
         title: 'Create Account',
-        desc: 'Sign up in seconds. Get 3 free credits instantly on a new device.',
+        desc: 'Sign up in seconds and log in to the panel.',
     },
     {
         number: '02',
-        icon: FaGem,
-        title: 'Get Credits',
-        desc: 'Earn through referrals or purchase credit packs starting at ₹499.',
+        icon: FaCrown,   // swap FaGem → FaCrown
+        title: 'Get Pro Plan',
+        desc: 'Contact us on Telegram, choose a plan (Weekly/Monthly/Season), and pay via UPI or USDT.',
     },
     {
         number: '03',
         icon: FaBullseye,
         title: 'Launch Attack',
-        desc: 'Enter target IP, port, duration. Pass CAPTCHA and fire when ready.',
+        desc: 'Enter target IP, port, duration. Pass CAPTCHA and fire — up to 30 attacks/day, 300s max.',
     },
 ];
 
@@ -133,7 +133,7 @@ export default function Home({ toggleTheme, theme }) {
 
         return () => controller.abort(); // Cancel on unmount
     }, [API_URL]);
-    
+
     useEffect(() => {
         const ctx = gsap.context(() => {
 
@@ -413,7 +413,7 @@ export default function Home({ toggleTheme, theme }) {
                         }}
                     >
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                        Platform Active — Free Credits on Signup
+                        Platform Active — Pro Plans from ₹850
                     </div>
 
                     {/* Main heading */}
@@ -447,7 +447,7 @@ export default function Home({ toggleTheme, theme }) {
                         className={`reveal-up text-base sm:text-xl mt-6 max-w-xl mx-auto leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'
                             }`}
                     >
-                        The ultimate stress-testing panel. Credits-based access, real-time
+                        The ultimate stress-testing panel. Plan-Based access, real-time
                         attack monitoring, and a powerful referral system.
                     </p>
 
@@ -491,7 +491,7 @@ export default function Home({ toggleTheme, theme }) {
                         {[
                             { icon: MdSecurity, text: 'CAPTCHA Protected' },
                             { icon: FaShieldAlt, text: 'Device Fingerprinted' },
-                            { icon: FaGem, text: '3 Free Credits on Signup' },
+                            { icon: FaGem, text: 'Pro Plans from ₹850/week' },
                         ].map(({ icon: Icon, text }) => (
                             <span
                                 key={text}
@@ -655,9 +655,11 @@ export default function Home({ toggleTheme, theme }) {
                             <span className="text-gradient-red">Destroy?</span>
                         </h2>
                         <p className={`reveal-up text-sm sm:text-base mb-8 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {isLoggedIn
-                                ? 'Welcome back, warrior. Your dashboard awaits.'
-                                : 'Create your account in seconds. 3 free credits on signup. No credit card required.'}
+                            <p className={`reveal-up text-sm sm:text-base mb-8 ...`}>
+                                {isLoggedIn
+                                    ? 'Welcome back, warrior. Your dashboard awaits.'
+                                    : 'Subscribe to Pro for unlimited attacks. Weekly, Monthly & Season plans available via Telegram.'}
+                            </p>
                         </p>
 
                         <div className="reveal-up flex flex-col sm:flex-row items-center justify-center gap-3">

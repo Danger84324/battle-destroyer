@@ -22,6 +22,7 @@ export default function Footer({ theme }) {
         { to: '/attack', label: 'Attack Panel', icon: FaBullseye },
         { to: '/contact', label: 'Upgrade Plan', icon: FaGem },
         { to: '/reseller-prices', label: 'Reseller Plans', icon: FaCrown },
+        { path: '/reseller',        label: 'Reseller Login',        icon: FaCrown },
     ];
 
     return (
