@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
-    FaTelegram, FaBolt, FaCrown, FaCalendarAlt,
-    FaRupeeSign, FaInfoCircle, FaShoppingCart, FaChevronRight,
+    FaBolt, FaCrown, FaCalendarAlt,
+    FaRupeeSign, FaInfoCircle, FaShoppingCart, 
     FaClock, FaInfinity
 } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
@@ -12,9 +12,7 @@ import AnimatedBackground from '../components/AnimatedBackground';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const TELEGRAM_URL = 'https://t.me/BattleDestroyerDDOS_Bot';
-
-// Updated plans for subscription system
+// Plans for subscription system
 const plans = [
     { 
         days: 7, 
@@ -88,7 +86,6 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                 : [];
 
             if (cards.length) {
-                // set all invisible before ScrollTrigger fires
                 gsap.set(cards, { opacity: 0 });
 
                 cards.forEach((card, i) => {
@@ -179,14 +176,6 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                 );
             }
 
-            // ── TELEGRAM BUTTON — continuous shimmer ──
-            gsap.to('.tg-btn', {
-                boxShadow: '0 8px 36px rgba(37,99,235,0.55)',
-                repeat: -1, yoyo: true,
-                duration: 1.8,
-                ease: 'sine.inOut',
-            });
-
         });
 
         return () => ctx.revert();
@@ -217,24 +206,9 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                             Get <span className="text-gradient-red">Pro Access</span>
                         </h1>
 
-                        <p className={`text-sm max-w-md mx-auto mb-6 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            Subscribe to Pro for unlimited attacks and premium features. All payments handled securely via Telegram bot.
+                        <p className={`text-sm max-w-md mx-auto ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                            Choose your plan and upgrade instantly within the dashboard
                         </p>
-                        <a
-                            href={TELEGRAM_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="tg-btn inline-flex items-center gap-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-xl transition-colors active:scale-95 text-sm"
-                            style={{
-                                fontFamily: "'Rajdhani', sans-serif",
-                                letterSpacing: '0.06em',
-                                boxShadow: '0 6px 24px rgba(37,99,235,0.35)',
-                            }}
-                        >
-                            <FaTelegram size={16} />
-                            CONTACT VIA TELEGRAM BOT
-                            <FaChevronRight size={11} />
-                        </a>
                     </div>
 
                     {/* ── Pricing Grid ── */}
@@ -354,26 +328,23 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                                     </div>
                                 </div>
 
-                                {/* Buy button */}
-                                <a
-                                    href={TELEGRAM_URL}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`w-full py-3 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 transition-colors active:scale-95 mt-auto ${plan.popular
-                                        ? 'bg-red-600 hover:bg-red-500 text-white'
+                                {/* Disabled button - just for display */}
+                                <div
+                                    className={`w-full py-3 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 mt-auto opacity-70 cursor-not-allowed
+                                        ${plan.popular
+                                        ? 'bg-red-600/50 text-white'
                                         : dark
-                                            ? 'bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.1] text-slate-300 hover:text-white'
-                                            : 'bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700'
+                                            ? 'bg-white/[0.05] border border-white/[0.1] text-slate-400'
+                                            : 'bg-slate-100 border border-slate-200 text-slate-500'
                                         }`}
                                     style={{
                                         fontFamily: "'Rajdhani', sans-serif",
                                         letterSpacing: '0.06em',
-                                        boxShadow: plan.popular ? '0 4px 20px rgba(220,38,38,0.3)' : 'none',
                                     }}
                                 >
                                     <FaShoppingCart size={13} />
-                                    GET PRO ACCESS
-                                </a>
+                                    BUY FROM RESELLERS
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -392,14 +363,12 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                                 className={`font-bold text-sm mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}
                                 style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.04em' }}
                             >
-                                HOW TO GET PRO
+                                PRO FEATURES
                             </p>
                             <p className={`text-xs leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                Click <span className="text-blue-400 font-semibold">Get Pro Access</span>{' '}
-                                on any plan to open our Telegram bot. Send the plan name and complete
-                                payment via UPI/bank transfer. Your Pro account will be activated within
-                                minutes after confirmation. Pro users get <span className="font-semibold">30 attacks per day</span> with{' '}
-                                <span className="font-semibold">300 seconds max duration</span>.
+                                Pro users get <span className="font-semibold">30 attacks per day</span> with{' '}
+                                <span className="font-semibold">300 seconds max duration</span>. 
+                                Upgrade from your dashboard after logging in.
                             </p>
                         </div>
                     </div>
@@ -417,7 +386,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                             <div className="flex items-center gap-2">
                                 <FaBolt className="text-blue-400" size={12} />
                                 <span className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                    Unlimited attacks
+                                    30 attacks per day
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">

@@ -8,7 +8,6 @@ import {
     FaShieldAlt,
     FaCrown,
     FaArrowRight,
-    FaTelegram,
     FaLock,
     FaServer,
     FaChartLine,
@@ -22,8 +21,6 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
-
-
 
 /* ─── FEATURE DATA ─────────────────────────────── */
 const FEATURES = [
@@ -41,7 +38,7 @@ const FEATURES = [
         bg: 'from-red-600/10 to-red-600/5',
         border: 'border-red-600/20',
         title: 'Pro Subscription',
-        desc: 'Choose Weekly, Monthly, or Season Pro plans. Get 30 attacks/day with 300s max duration. Activate via Telegram.',
+        desc: 'Choose Weekly, Monthly, or Season Pro plans. Get 30 attacks/day with 300s max duration.',
     },
     {
         icon: FaShieldAlt,
@@ -68,7 +65,7 @@ const FEATURES = [
         desc: 'Become a reseller — buy credits in bulk and distribute Pro plans to customers for 4×+ profit.',
     },
     {
-        icon: FaCalendarAlt,   // add this to imports
+        icon: FaCalendarAlt,
         color: 'text-orange-400',
         bg: 'from-orange-600/10 to-orange-600/5',
         border: 'border-orange-600/20',
@@ -87,9 +84,9 @@ const STEPS = [
     },
     {
         number: '02',
-        icon: FaCrown,   // swap FaGem → FaCrown
+        icon: FaCrown,
         title: 'Get Pro Plan',
-        desc: 'Contact us on Telegram, choose a plan (Weekly/Monthly/Season), and pay via UPI or USDT.',
+        desc: 'Choose a plan (Weekly/Monthly/Season) and upgrade instantly via payment gateway.',
     },
     {
         number: '03',
@@ -116,13 +113,13 @@ export default function Home({ toggleTheme, theme }) {
     const ctaRef = useRef(null);
     const API_URL = process.env.REACT_APP_API_URL
 
-
     const STATS = [
         { value: '99.9%', label: 'Uptime', icon: FaServer },
         { value: liveStats.totalUsers.toLocaleString(), label: 'Active Users', icon: FaUsers },
         { value: liveStats.totalAttacks.toLocaleString(), label: 'Attacks Launched', icon: FaBullseye },
         { value: '<10ms', label: 'Response Time', icon: MdSpeed },
     ];
+
     useEffect(() => {
         const controller = new AbortController();
 
@@ -131,13 +128,11 @@ export default function Home({ toggleTheme, theme }) {
             .then(d => setLiveStats(d))
             .catch(() => { });
 
-        return () => controller.abort(); // Cancel on unmount
+        return () => controller.abort();
     }, [API_URL]);
 
     useEffect(() => {
         const ctx = gsap.context(() => {
-
-            // ── HERO — staggered fade + slide down on mount ──
             if (heroRef.current) {
                 const els = heroRef.current.querySelectorAll('.reveal-up');
                 gsap.fromTo(
@@ -153,7 +148,6 @@ export default function Home({ toggleTheme, theme }) {
                 );
             }
 
-            // ── STATS — each card scales up + fades, reverses on scroll-up ──
             statsRef.current?.querySelectorAll('.reveal-up').forEach((el, i) => {
                 gsap.fromTo(
                     el,
@@ -172,9 +166,7 @@ export default function Home({ toggleTheme, theme }) {
                 );
             });
 
-            // ── FEATURES — alternating left/right slide + scale + fade ──
             featuresRef.current?.querySelectorAll('.reveal-up').forEach((el, i) => {
-                // heading/tag elements → slide up
                 const isHeading = el.closest('.text-center');
                 gsap.fromTo(
                     el,
@@ -198,7 +190,6 @@ export default function Home({ toggleTheme, theme }) {
                 );
             });
 
-            // ── STEPS — each step slides up with stagger, reverses on scroll-up ──
             stepsRef.current?.querySelectorAll('.reveal-up').forEach((el, i) => {
                 gsap.fromTo(
                     el,
@@ -217,7 +208,6 @@ export default function Home({ toggleTheme, theme }) {
                 );
             });
 
-            // ── CTA — scale up from slightly smaller + fade ──
             if (ctaRef.current) {
                 gsap.fromTo(
                     ctaRef.current.querySelector('.reveal-up') ?? ctaRef.current,
@@ -233,7 +223,6 @@ export default function Home({ toggleTheme, theme }) {
                         },
                     }
                 );
-                // animate inner reveal-up children with stagger
                 const innerEls = ctaRef.current.querySelectorAll('.reveal-up');
                 if (innerEls.length > 1) {
                     gsap.fromTo(
@@ -254,7 +243,6 @@ export default function Home({ toggleTheme, theme }) {
                     );
                 }
             }
-
         });
 
         return () => ctx.revert();
@@ -300,7 +288,6 @@ export default function Home({ toggleTheme, theme }) {
                     {/* ── Center Navigation (Desktop only) ── */}
                     <div className="hidden md:flex items-center gap-1">
                         {isLoggedIn ? (
-                            // Logged in: show Dashboard, Attack, and Contact
                             <>
                                 <Link
                                     to="/dashboard"
@@ -325,7 +312,7 @@ export default function Home({ toggleTheme, theme }) {
                                     <span className="relative">Attack</span>
                                 </Link>
                                 <Link
-                                    to="/contact"
+                                    to="/pricing"
                                     className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${dark
                                         ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
                                         : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
@@ -333,13 +320,12 @@ export default function Home({ toggleTheme, theme }) {
                                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                                 >
                                     <FaGem size={14} />
-                                    <span className="relative">Buy Credits</span>
+                                    <span className="relative">Pricing</span>
                                 </Link>
                             </>
                         ) : (
-                            // Not logged in: show only Contact
                             <Link
-                                to="/contact"
+                                to="/pricing"
                                 className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${dark
                                     ? 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
                                     : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'
@@ -347,7 +333,7 @@ export default function Home({ toggleTheme, theme }) {
                                 style={{ fontFamily: "'DM Sans', sans-serif" }}
                             >
                                 <FaGem size={14} />
-                                <span className="relative">Buy Credits</span>
+                                <span className="relative">Pricing</span>
                             </Link>
                         )}
                     </div>
@@ -362,7 +348,7 @@ export default function Home({ toggleTheme, theme }) {
                             {dark ? <MdWbSunny size={17} /> : <MdNightlight size={17} />}
                         </button>
 
-                        {/* Auth-aware button: Dashboard if logged in, Login if not */}
+                        {/* Auth-aware button */}
                         {isLoggedIn ? (
                             <Link
                                 to="/dashboard"
@@ -454,7 +440,6 @@ export default function Home({ toggleTheme, theme }) {
                     {/* ── CTAs — auth-aware ── */}
                     <div className="reveal-up flex flex-col sm:flex-row items-center justify-center gap-3 mt-10">
                         {isLoggedIn ? (
-                            /* User is logged in → show Dashboard button only */
                             <Link
                                 to="/dashboard"
                                 className="flex items-center gap-2.5 px-8 py-4 rounded-xl font-bold text-base text-white bg-red-600 hover:bg-red-500 transition-all active:scale-95 group"
@@ -469,7 +454,6 @@ export default function Home({ toggleTheme, theme }) {
                                 <FaArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
                             </Link>
                         ) : (
-                            /* User is NOT logged in → show Login button only (no Get Started) */
                             <Link
                                 to="/login"
                                 className="flex items-center gap-2.5 px-8 py-4 rounded-xl font-bold text-base text-white bg-red-600 hover:bg-red-500 transition-all active:scale-95 group"
@@ -655,11 +639,9 @@ export default function Home({ toggleTheme, theme }) {
                             <span className="text-gradient-red">Destroy?</span>
                         </h2>
                         <p className={`reveal-up text-sm sm:text-base mb-8 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            <p className={`reveal-up text-sm sm:text-base mb-8 ...`}>
-                                {isLoggedIn
-                                    ? 'Welcome back, warrior. Your dashboard awaits.'
-                                    : 'Subscribe to Pro for unlimited attacks. Weekly, Monthly & Season plans available via Telegram.'}
-                            </p>
+                            {isLoggedIn
+                                ? 'Welcome back, warrior. Your dashboard awaits.'
+                                : 'Subscribe to Pro for unlimited attacks. Weekly, Monthly & Season plans available.'}
                         </p>
 
                         <div className="reveal-up flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -690,16 +672,6 @@ export default function Home({ toggleTheme, theme }) {
                                     LOGIN TO PANEL
                                 </Link>
                             )}
-                            <a
-                                href="https://t.me/BattleDestroyerDDOS_Bot"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2.5 px-8 py-4 rounded-xl font-bold text-base bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/25 text-blue-400 transition-all active:scale-95"
-                                style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em' }}
-                            >
-                                <FaTelegram size={15} />
-                                TELEGRAM
-                            </a>
                         </div>
                     </div>
                 </div>

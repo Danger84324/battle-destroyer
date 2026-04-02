@@ -4,7 +4,6 @@ import {
     FaBolt,
     FaBullseye,
     FaGem,
-    FaTelegram,
     FaShieldAlt,
     FaServer,
     FaCrown
@@ -22,7 +21,7 @@ export default function Footer({ theme }) {
         { to: '/attack', label: 'Attack Panel', icon: FaBullseye },
         { to: '/contact', label: 'Upgrade Plan', icon: FaGem },
         { to: '/reseller-prices', label: 'Reseller Plans', icon: FaCrown },
-        { path: '/reseller',        label: 'Reseller Login',        icon: FaCrown },
+        { to: '/reseller',        label: 'Reseller Login',        icon: FaCrown },
     ];
 
     return (
@@ -97,15 +96,6 @@ export default function Footer({ theme }) {
                         <p className={`text-xs font-bold uppercase tracking-[0.15em] mb-4 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
                             Support
                         </p>
-                        <a
-                            href="https://t.me/BattleDestroyerDDOS_Bot"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-blue-600/10 border border-blue-600/20 text-blue-400 hover:bg-blue-600/20 transition-all text-sm font-semibold mb-4"
-                        >
-                            <FaTelegram size={15} />
-                            Telegram
-                        </a>
                         <div className="space-y-2 mt-1">
                             {[
                                 { icon: FaShieldAlt, text: 'CAPTCHA protected' },

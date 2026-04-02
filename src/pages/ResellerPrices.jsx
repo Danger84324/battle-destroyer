@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
-    FaGem, FaTelegram, FaBolt, FaCrown, FaFire,
-    FaRupeeSign, FaInfoCircle, FaChevronRight,
+    FaGem, FaBolt, FaCrown, FaFire,
+    FaRupeeSign, FaInfoCircle, 
     FaUsers, FaShieldAlt, FaCheckCircle,
     FaCalculator, FaChartLine,
 } from 'react-icons/fa';
@@ -13,8 +13,6 @@ import AnimatedBackground from '../components/AnimatedBackground';
 import Footer from '../components/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
-
-const TELEGRAM_URL = 'https://t.me/BattleDestroyerDDOS_Bot';
 
 // ── Credit system: Base unit = 200 ───────────────────────────────────────────
 const CREDIT_RATE = 1; // ₹1 per credit
@@ -116,20 +114,14 @@ const BENEFITS = [
     { icon: FaCheckCircle, title: 'Fixed Pricing',        desc: 'Sell at our fixed customer price list — your margins are always protected.' },
 ];
 
-// ── NEW PROFIT CALCULATOR ─────────────────────────────────────────────────────
-// Shows: For X credits, how many Week/Month/Season plans can you sell?
-// With profit breakdown per plan type and total profit
+// Profit Calculator Component
 function ProfitCalculator({ dark }) {
     const [credits, setCredits] = useState(10000);
     
-    // Calculate max possible plans from credits
     const maxWeeks = Math.floor(credits / 200);
     const maxMonths = Math.floor(credits / 400);
     const maxSeasons = Math.floor(credits / 800);
     
-    // For each plan type, calculate:
-    // - How many you can sell if you sell ONLY that plan
-    // - Total revenue, cost, profit
     const weekRevenue = maxWeeks * 850;
     const weekCost = maxWeeks * 200;
     const weekProfit = weekRevenue - weekCost;
@@ -142,25 +134,21 @@ function ProfitCalculator({ dark }) {
     const seasonCost = maxSeasons * 800;
     const seasonProfit = seasonRevenue - seasonCost;
     
-    // For "Balanced Mix" - sell equal number of each plan (using smallest divisor)
-    const balancedCount = Math.floor(credits / (200 + 400 + 800)); // credits / 1400
+    const balancedCount = Math.floor(credits / (200 + 400 + 800));
     const balancedWeeks = balancedCount;
     const balancedMonths = balancedCount;
     const balancedSeasons = balancedCount;
     const balancedUsedCredits = (balancedWeeks * 200) + (balancedMonths * 400) + (balancedSeasons * 800);
     const balancedRevenue = (balancedWeeks * 850) + (balancedMonths * 1800) + (balancedSeasons * 2500);
-    const balancedCost = balancedUsedCredits;
-    const balancedProfit = balancedRevenue - balancedCost;
+    const balancedProfit = balancedRevenue - balancedUsedCredits;
     const remainingCredits = credits - balancedUsedCredits;
     
-    // Quick preset buttons
     const quickPresets = [
         { label: '₹5K', value: 5000 },
         { label: '₹10K', value: 10000 },
         { label: '₹20K', value: 20000 },
     ];
     
-    // Helper to format currency
     const formatINR = (num) => `₹${num.toLocaleString()}`;
     
     const cardCls = dark
@@ -169,7 +157,6 @@ function ProfitCalculator({ dark }) {
     
     return (
         <div className={`rounded-3xl border p-6 sm:p-8 ${cardCls}`}>
-            {/* Header */}
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center">
                     <FaCalculator className="text-red-400" size={16} />
@@ -186,7 +173,6 @@ function ProfitCalculator({ dark }) {
             </div>
             
             <div className="space-y-8">
-                {/* Credit Input Section */}
                 <div>
                     <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                         Your Credit Balance
@@ -203,7 +189,6 @@ function ProfitCalculator({ dark }) {
                         />
                         <span className={`px-3 flex items-center text-xs font-bold ${dark ? 'text-slate-500' : 'text-slate-400'}`}>CREDITS</span>
                     </div>
-                    {/* Quick presets */}
                     <div className="flex gap-2 mt-2">
                         {quickPresets.map(p => (
                             <button
@@ -221,17 +206,14 @@ function ProfitCalculator({ dark }) {
                             </button>
                         ))}
                     </div>
-                    <p className={`text-[10px] mt-2 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                        You bought {credits.toLocaleString()} credits at ₹{credits.toLocaleString()} (₹1/credit)
-                    </p>
                 </div>
                 
-                {/* Strategy 1: Sell ONLY Week Plans */}
+                {/* Strategy 1: Week Plans */}
                 <div className={`rounded-2xl border overflow-hidden ${dark ? 'border-blue-600/30 bg-blue-600/5' : 'border-blue-200 bg-blue-50/50'}`}>
                     <div className={`px-4 py-3 ${dark ? 'bg-blue-600/10 border-b border-blue-600/20' : 'bg-blue-100/50 border-b border-blue-200'}`}>
                         <div className="flex items-center gap-2">
                             <FaBolt className="text-blue-400" size={14} />
-                            <span className="font-bold text-sm uppercase tracking-wider text-blue-400">Strategy 1: Sell Only Week Plans</span>
+                            <span className="font-bold text-sm uppercase tracking-wider text-blue-400">Sell Only Week Plans</span>
                         </div>
                     </div>
                     <div className="p-4">
@@ -262,21 +244,15 @@ function ProfitCalculator({ dark }) {
                                 </p>
                             </div>
                         </div>
-                        <div className={`h-1.5 rounded-full overflow-hidden ${dark ? 'bg-white/[0.1]' : 'bg-slate-200'}`}>
-                            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400" style={{ width: '100%' }} />
-                        </div>
-                        <p className={`text-[10px] mt-2 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                            Each Week plan: Costs you ₹200 → Sell for ₹850 → Profit ₹650 (4.25× return)
-                        </p>
                     </div>
                 </div>
                 
-                {/* Strategy 2: Sell ONLY Month Plans */}
+                {/* Strategy 2: Month Plans */}
                 <div className={`rounded-2xl border overflow-hidden ${dark ? 'border-green-600/30 bg-green-600/5' : 'border-green-200 bg-green-50/50'}`}>
                     <div className={`px-4 py-3 ${dark ? 'bg-green-600/10 border-b border-green-600/20' : 'bg-green-100/50 border-b border-green-200'}`}>
                         <div className="flex items-center gap-2">
                             <FaGem className="text-green-400" size={14} />
-                            <span className="font-bold text-sm uppercase tracking-wider text-green-400">Strategy 2: Sell Only Month Plans</span>
+                            <span className="font-bold text-sm uppercase tracking-wider text-green-400">Sell Only Month Plans</span>
                         </div>
                     </div>
                     <div className="p-4">
@@ -307,21 +283,15 @@ function ProfitCalculator({ dark }) {
                                 </p>
                             </div>
                         </div>
-                        <div className={`h-1.5 rounded-full overflow-hidden ${dark ? 'bg-white/[0.1]' : 'bg-slate-200'}`}>
-                            <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-green-400" style={{ width: '100%' }} />
-                        </div>
-                        <p className={`text-[10px] mt-2 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                            Each Month plan: Costs you ₹400 → Sell for ₹1800 → Profit ₹1400 (4.5× return)
-                        </p>
                     </div>
                 </div>
                 
-                {/* Strategy 3: Sell ONLY Season Plans */}
+                {/* Strategy 3: Season Plans */}
                 <div className={`rounded-2xl border overflow-hidden ${dark ? 'border-yellow-600/30 bg-yellow-600/5' : 'border-yellow-200 bg-yellow-50/50'}`}>
                     <div className={`px-4 py-3 ${dark ? 'bg-yellow-600/10 border-b border-yellow-600/20' : 'bg-yellow-100/50 border-b border-yellow-200'}`}>
                         <div className="flex items-center gap-2">
                             <FaCrown className="text-yellow-400" size={14} />
-                            <span className="font-bold text-sm uppercase tracking-wider text-yellow-400">Strategy 3: Sell Only Season Plans</span>
+                            <span className="font-bold text-sm uppercase tracking-wider text-yellow-400">Sell Only Season Plans</span>
                         </div>
                     </div>
                     <div className="p-4">
@@ -352,21 +322,15 @@ function ProfitCalculator({ dark }) {
                                 </p>
                             </div>
                         </div>
-                        <div className={`h-1.5 rounded-full overflow-hidden ${dark ? 'bg-white/[0.1]' : 'bg-slate-200'}`}>
-                            <div className="h-full rounded-full bg-gradient-to-r from-yellow-500 to-yellow-400" style={{ width: '100%' }} />
-                        </div>
-                        <p className={`text-[10px] mt-2 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                            Each Season plan: Costs you ₹800 → Sell for ₹2500 → Profit ₹1700 (3.125× return)
-                        </p>
                     </div>
                 </div>
                 
-                {/* Strategy 4: Balanced Mix (Example) */}
+                {/* Balanced Mix */}
                 <div className={`rounded-2xl border overflow-hidden ${dark ? 'border-purple-600/30 bg-purple-600/5' : 'border-purple-200 bg-purple-50/50'}`}>
                     <div className={`px-4 py-3 ${dark ? 'bg-purple-600/10 border-b border-purple-600/20' : 'bg-purple-100/50 border-b border-purple-200'}`}>
                         <div className="flex items-center gap-2">
                             <FaChartLine className="text-purple-400" size={14} />
-                            <span className="font-bold text-sm uppercase tracking-wider text-purple-400">Example: Balanced Mix (Equal numbers)</span>
+                            <span className="font-bold text-sm uppercase tracking-wider text-purple-400">Balanced Mix (Equal numbers)</span>
                         </div>
                     </div>
                     <div className="p-4">
@@ -404,12 +368,9 @@ function ProfitCalculator({ dark }) {
                         </div>
                         {remainingCredits > 0 && (
                             <p className={`text-[11px] mt-2 ${dark ? 'text-amber-400' : 'text-amber-600'}`}>
-                                ⚡ {remainingCredits.toLocaleString()} credits remaining — you can sell {Math.floor(remainingCredits / 200)} more Week plans or combine with other plans!
+                                ⚡ {remainingCredits.toLocaleString()} credits remaining
                             </p>
                         )}
-                        <div className={`h-1.5 rounded-full overflow-hidden mt-2 ${dark ? 'bg-white/[0.1]' : 'bg-slate-200'}`}>
-                            <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400" style={{ width: `${(balancedUsedCredits / credits) * 100}%` }} />
-                        </div>
                     </div>
                 </div>
                 
@@ -441,26 +402,13 @@ function ProfitCalculator({ dark }) {
                             <p className="text-xs text-green-400">Profit: {formatINR(seasonProfit)}</p>
                         </div>
                     </div>
-                    <div className={`mt-3 pt-3 border-t ${dark ? 'border-white/[0.1]' : 'border-slate-200'}`}>
-                        <p className="text-sm font-black text-green-400" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
-                            Highest Profit Strategy: {weekProfit >= monthProfit && weekProfit >= seasonProfit ? 'Week Plans' : monthProfit >= weekProfit && monthProfit >= seasonProfit ? 'Month Plans' : 'Season Plans'}
-                        </p>
-                        <p className={`text-[10px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                            {weekProfit >= monthProfit && weekProfit >= seasonProfit 
-                                ? `Selling only Week plans gives you ₹${weekProfit.toLocaleString()} profit on ₹${weekCost.toLocaleString()} investment (${((weekProfit / weekCost) * 100).toFixed(0)}% ROI)`
-                                : monthProfit >= weekProfit && monthProfit >= seasonProfit
-                                    ? `Selling only Month plans gives you ₹${monthProfit.toLocaleString()} profit on ₹${monthCost.toLocaleString()} investment (${((monthProfit / monthCost) * 100).toFixed(0)}% ROI)`
-                                    : `Selling only Season plans gives you ₹${seasonProfit.toLocaleString()} profit on ₹${seasonCost.toLocaleString()} investment (${((seasonProfit / seasonCost) * 100).toFixed(0)}% ROI)`
-                            }
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Main Page ──
 export default function ResellerPrices({ toggleTheme, theme }) {
     const dark = theme !== 'light';
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -475,7 +423,6 @@ export default function ResellerPrices({ toggleTheme, theme }) {
 
     useEffect(() => {
         const ctx = gsap.context(() => {
-
             if (headerRef.current) {
                 gsap.fromTo(Array.from(headerRef.current.children),
                     { opacity: 0, y: -28 },
@@ -550,11 +497,6 @@ export default function ResellerPrices({ toggleTheme, theme }) {
                       scrollTrigger: { trigger: ctaRef.current, start: 'top 88%', toggleActions: 'play none none reverse' } }
                 );
             }
-
-            gsap.to('.tg-btn', {
-                boxShadow: '0 8px 36px rgba(37,99,235,0.55)',
-                repeat: -1, yoyo: true, duration: 1.8, ease: 'sine.inOut',
-            });
         });
 
         return () => ctx.revert();
@@ -607,30 +549,18 @@ export default function ResellerPrices({ toggleTheme, theme }) {
 
                     {/* ── Header ── */}
                     <div ref={headerRef} className="text-center mb-14">
-                        <p className="bd-section-tag mb-2">Become a Reseller</p>
+                        <p className="bd-section-tag mb-2">Reseller Packages</p>
                         <h1 className={`text-3xl sm:text-5xl font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}
                             style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.04em' }}>
                             Reseller <span className="text-gradient-red">Packages</span>
                         </h1>
-                        <p className={`text-sm max-w-lg mx-auto mb-6 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <p className={`text-sm max-w-lg mx-auto ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                             Buy credits in bulk at <span className={`font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>₹1/credit</span> and resell plans at fixed customer prices.
-                            Earn <span className={`font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>4×+ profit</span> on every sale — zero credit waste guaranteed.
+                            Earn <span className={`font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>4×+ profit</span> on every sale.
                         </p>
-                        <div className="flex items-center justify-center gap-3 flex-wrap">
-                            <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer"
-                                className="tg-btn inline-flex items-center gap-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-xl transition-colors active:scale-95 text-sm"
-                                style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em', boxShadow: '0 6px 24px rgba(37,99,235,0.35)' }}>
-                                <FaTelegram size={16} /> CONTACT TO BECOME RESELLER <FaChevronRight size={11} />
-                            </a>
-                            <Link to="/reseller"
-                                className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 border ${dark ? 'bg-white/[0.05] border-white/[0.1] text-slate-300 hover:text-white hover:bg-white/[0.08]' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
-                                style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em' }}>
-                                RESELLER LOGIN
-                            </Link>
-                        </div>
                     </div>
 
-                    {/* ── Reseller Credit Packs (NO BONUS) ── */}
+                    {/* ── Reseller Credit Packs ── */}
                     <div className="mb-6">
                         <p className={`text-xs font-bold uppercase tracking-[0.15em] mb-6 text-center ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
                             Wholesale Credit Packages · 1 Credit = ₹1
@@ -713,11 +643,17 @@ export default function ResellerPrices({ toggleTheme, theme }) {
                                         </div>
                                     </div>
 
-                                    <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer"
-                                        className={`w-full py-3 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 transition-colors active:scale-95 mt-auto ${pkg.popular ? 'bg-red-600 hover:bg-red-500 text-white' : dark ? 'bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.1] text-slate-300 hover:text-white' : 'bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700'}`}
-                                        style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em', boxShadow: pkg.popular ? '0 4px 20px rgba(220,38,38,0.3)' : 'none' }}>
-                                        <FaTelegram size={13} /> GET THIS PACK
-                                    </a>
+                                    {/* Disabled button - just for display */}
+                                    <div
+                                        className={`w-full py-3 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 mt-auto opacity-70 cursor-not-allowed
+                                            ${pkg.popular 
+                                                ? 'bg-red-600/50 text-white' 
+                                                : dark 
+                                                    ? 'bg-white/[0.05] border border-white/[0.1] text-slate-400' 
+                                                    : 'bg-slate-100 border border-slate-200 text-slate-500'}`}
+                                        style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em' }}>
+                                        VIEW PACKAGE
+                                    </div>
                                 </div>
                             );
                         })}
@@ -731,7 +667,7 @@ export default function ResellerPrices({ toggleTheme, theme }) {
                             Sell at These <span className="text-gradient-red">Fixed Rates</span>
                         </h2>
                         <p className={`text-xs max-w-md mx-auto ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                            Resellers must sell at these fixed prices — undercutting is not allowed. Your profit is built in.
+                            Resellers must sell at these fixed prices — undercutting is not allowed.
                         </p>
                     </div>
 
@@ -840,57 +776,6 @@ export default function ResellerPrices({ toggleTheme, theme }) {
                         </div>
                     </div>
 
-                    {/* ── How it works ── */}
-                    <div ref={ctaRef} className={`rounded-3xl border p-8 sm:p-12 mb-8 relative overflow-hidden ${dark ? 'bg-gradient-to-br from-red-600/10 via-surface-800/80 to-surface-800/80 border-red-600/20' : 'bg-gradient-to-br from-red-50 via-white to-white border-red-100'}`}>
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full pointer-events-none"
-                            style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.15) 0%, transparent 70%)' }} />
-
-                        <div className="text-center mb-8">
-                            <p className="bd-section-tag mb-2">How It Works</p>
-                            <h2 className={`text-2xl sm:text-4xl font-bold ${dark ? 'text-white' : 'text-slate-900'}`}
-                                style={{ fontFamily: "'Rajdhani', sans-serif" }}>
-                                Start Reselling in <span className="text-gradient-red">3 Steps</span>
-                            </h2>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-                            {[
-                                { icon: FaTelegram,   title: 'Contact Admin',    desc: 'Message us on Telegram and choose your reseller credit pack.' },
-                                { icon: FaRupeeSign,  title: 'Make Payment',     desc: 'Pay via UPI or USDT. Credits are added to your reseller account instantly.' },
-                                { icon: FaUsers,      title: 'Activate Plans',   desc: 'Log in to the reseller panel, search a user, and give them a plan in seconds.' },
-                            ].map((step, i) => {
-                                const Icon = step.icon;
-                                return (
-                                    <div key={i} className="text-center">
-                                        <div className="relative inline-block mb-4">
-                                            <div className="w-14 h-14 rounded-2xl border-2 border-red-600/30 bg-red-600/10 flex items-center justify-center mx-auto">
-                                                <Icon className="text-red-400" size={20} />
-                                            </div>
-                                            <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-600 text-white text-xs font-black flex items-center justify-center"
-                                                style={{ fontFamily: "'Rajdhani', sans-serif" }}>{i + 1}</span>
-                                        </div>
-                                        <h3 className={`font-bold text-base mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}
-                                            style={{ fontFamily: "'Rajdhani', sans-serif" }}>{step.title}</h3>
-                                        <p className={`text-xs leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{step.desc}</p>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                            <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-2.5 px-8 py-4 rounded-xl font-bold text-base text-white bg-blue-600 hover:bg-blue-500 transition-all active:scale-95"
-                                style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em', boxShadow: '0 6px 30px rgba(37,99,235,0.4)' }}>
-                                <FaTelegram size={16} /> CONTACT ON TELEGRAM
-                            </a>
-                            <Link to="/reseller"
-                                className={`flex items-center gap-2.5 px-8 py-4 rounded-xl font-bold text-base transition-all active:scale-95 border ${dark ? 'bg-white/[0.05] border-white/[0.1] text-slate-300 hover:text-white hover:bg-white/[0.08]' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
-                                style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em' }}>
-                                RESELLER PANEL LOGIN
-                            </Link>
-                        </div>
-                    </div>
-
                     {/* ── Zero Waste Notice ── */}
                     <div className={`rounded-2xl border p-5 flex items-start gap-4 mb-4 ${dark ? 'bg-green-500/5 border-green-500/20' : 'bg-green-50 border-green-200'}`}>
                         <div className="w-9 h-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -917,9 +802,8 @@ export default function ResellerPrices({ toggleTheme, theme }) {
                             <p className={`font-bold text-sm mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}
                                 style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.04em' }}>IMPORTANT NOTES</p>
                             <p className={`text-xs leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                Reseller accounts are manually approved. Credits are non-refundable once distributed to customers.
+                                Credits are non-refundable once distributed to customers.
                                 Resellers must sell at our fixed customer pricing — undercutting will result in account termination.
-                                Contact admin on Telegram for support.
                             </p>
                         </div>
                     </div>
