@@ -43,6 +43,23 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
         }, 500);
     }, [toast, onLogout]);
 
+    useEffect(() => {
+        if (stats) {
+            // Fix if currentActiveAttacks is an object instead of number
+            if (typeof stats.currentActiveAttacks === 'object') {
+                setStats(prev => ({
+                    ...prev,
+                    currentActiveAttacks: 0,
+                    remainingSlots: prev.limits?.maxConcurrent || 2
+                }));
+            }
+        }
+    }, [stats]);
+
+
+
+    // In ApiUserDashboard.jsx - Fix the useCallback dependency
+
     const fetchDashboardData = useCallback(async () => {
         try {
             setError(null);
@@ -73,12 +90,13 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
             } else {
                 setError(err.response?.data?.error || 'Failed to fetch dashboard data');
             }
-            toast(error || 'Failed to fetch dashboard data', 'error');
+            // FIX: Remove 'error' from here - it's not needed
+            toast('Failed to fetch dashboard data', 'error');
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [token, toast, handleLogout]);
+    }, [token, toast, handleLogout]);  // FIX: Remove 'error' from dependencies
 
     const refreshData = async () => {
         setRefreshing(true);
@@ -103,7 +121,7 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
             window.location.href = '/api';
             return;
         }
-        
+
         fetchDashboardData();
         const interval = setInterval(() => fetchDashboardData(), 15000);
         return () => clearInterval(interval);
