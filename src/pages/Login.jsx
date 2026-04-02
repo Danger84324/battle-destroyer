@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -11,68 +11,53 @@ import {
   FaExclamationCircle,
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
-import TurnstileWidget from '../components/TurnstileWidget';
+import CaptchaWidget from '../components/CaptchaWidget';   // ← new
 import PasswordInput from '../components/PasswordInput';
 import AnimatedBackground from '../components/AnimatedBackground';
 
-const TOKEN_MAX_AGE_MS = 270_000;
-
 export default function Login({ toggleTheme, theme, setIsAuth }) {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm]           = useState({ email: '', password: '' });
   const [captchaReady, setCaptchaReady] = useState(false);
-  const [error, setError] = useState('');
+  const [error,   setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
-  const captchaTokenRef = useRef('');
-  const captchaIssuedRef = useRef(null);
-  const expiryTimerRef = useRef(null);
-  const turnstileRef = useRef(null);
+  // Stores { challengeId, solution, answer } from CaptchaWidget
+  const captchaDataRef = useRef(null);
+  const captchaRef     = useRef(null);
 
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-  const dark = theme !== 'light';
+  const API_URL  = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const dark     = theme !== 'light';
 
   const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const resetCaptcha = useCallback(() => {
-    captchaTokenRef.current = '';
-    captchaIssuedRef.current = null;
+    captchaDataRef.current = null;
     setCaptchaReady(false);
-    clearTimeout(expiryTimerRef.current);
-    turnstileRef.current?.reset();
+    captchaRef.current?.reset();
   }, []);
 
-  const handleVerify = useCallback((token) => {
-    captchaTokenRef.current = token;
-    captchaIssuedRef.current = Date.now();
+  // Called by CaptchaWidget once PoW + puzzle are both solved
+  const handleVerify = useCallback((data) => {
+    captchaDataRef.current = data;  // { challengeId, solution, answer }
     setCaptchaReady(true);
-    clearTimeout(expiryTimerRef.current);
-    expiryTimerRef.current = setTimeout(resetCaptcha, TOKEN_MAX_AGE_MS);
-  }, [resetCaptcha]);
-
-  useEffect(() => () => clearTimeout(expiryTimerRef.current), []);
+  }, []);
 
   const submit = async e => {
     e.preventDefault();
     setError('');
 
-    const token = captchaTokenRef.current;
-    const issuedAt = captchaIssuedRef.current;
-
-    if (!token) return setError('Please complete the CAPTCHA.');
-    if (!issuedAt || Date.now() - issuedAt > TOKEN_MAX_AGE_MS) {
-      resetCaptcha();
-      return setError('CAPTCHA expired. Please solve it again.');
-    }
+    if (!captchaDataRef.current) return setError('Please complete the human check.');
 
     setLoading(true);
     try {
       const { data } = await axios.post(`${API_URL}/api/auth/login`, {
         ...form,
-        captchaToken: token,
+        ...captchaDataRef.current,  // challengeId + solution + answer
+        hp: '',                     // honeypot — always blank for real users
       });
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('user',  JSON.stringify(data.user));
       setIsAuth(true);
       navigate('/dashboard');
     } catch (err) {
@@ -84,27 +69,20 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
   };
 
   const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${dark
-      ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/10'
-      : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
-    }`;
+    ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/10'
+    : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
+  }`;
 
   return (
-    <div
-      className={`relative min-h-screen flex transition-colors duration-300 ${dark ? 'bg-surface-950' : 'bg-slate-50'
-        }`}
-    >
+    <div className={`relative min-h-screen flex transition-colors duration-300 ${dark ? 'bg-surface-950' : 'bg-slate-50'}`}>
       <AnimatedBackground intensity={0.6} />
-
-      {/* Grid overlay */}
       <div className="fixed inset-0 bg-grid opacity-20 pointer-events-none z-0" />
 
       {/* ── Left decorative panel ── */}
       <div className="hidden lg:flex lg:w-[45%] relative items-center justify-center overflow-hidden z-10">
         <div
           className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(135deg, rgba(127,29,29,0.25) 0%, rgba(8,8,15,0.95) 60%, rgba(4,4,10,1) 100%)',
-          }}
+          style={{ background: 'linear-gradient(135deg, rgba(127,29,29,0.25) 0%, rgba(8,8,15,0.95) 60%, rgba(4,4,10,1) 100%)' }}
         />
         <div
           className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full"
@@ -118,22 +96,11 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
         <div className="relative text-center px-12 z-10">
           <div className="flex justify-center mb-8">
             <div className="relative">
-              <div
-                className="absolute inset-0 rounded-3xl blur-2xl"
-                style={{ background: 'rgba(220,38,38,0.2)' }}
-              />
-              <img
-                src="/logo512.png"
-                alt="Battle Destroyer"
-                className="relative w-52 h-52 object-contain drop-shadow-2xl"
-              />
+              <div className="absolute inset-0 rounded-3xl blur-2xl" style={{ background: 'rgba(220,38,38,0.2)' }} />
+              <img src="/logo512.png" alt="Battle Destroyer" className="relative w-52 h-52 object-contain drop-shadow-2xl" />
             </div>
           </div>
-
-          <h2
-            className="text-5xl font-bold text-white tracking-[0.15em] mb-1"
-            style={{ fontFamily: "'Rajdhani', sans-serif" }}
-          >
+          <h2 className="text-5xl font-bold text-white tracking-[0.15em] mb-1" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
             BATTLE
           </h2>
           <h2
@@ -151,10 +118,9 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
           <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
             The ultimate attack platform. Login to access your dashboard and launch operations.
           </p>
-
           <div className="mt-8 flex justify-center gap-2 flex-wrap">
             {[
-              { icon: FaGem, text: 'Credits' },
+              { icon: FaGem,  text: 'Credits' },
               { icon: FaLink, text: 'Referrals' },
               { icon: FaBolt, text: 'Attack Hub' },
             ].map((f, i) => (
@@ -173,8 +139,9 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
       <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 relative z-10">
         <button
           onClick={toggleTheme}
-          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
-            }`}
+          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+            dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
+          }`}
         >
           {dark ? <MdWbSunny size={17} /> : <MdNightlight size={17} />}
         </button>
@@ -183,10 +150,7 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <img src="/logo512.png" alt="Battle Destroyer" className="w-16 h-16 object-contain mx-auto mb-3" />
-            <h1
-              className="text-2xl font-bold text-red-500 tracking-[0.12em]"
-              style={{ fontFamily: "'Rajdhani', sans-serif" }}
-            >
+            <h1 className="text-2xl font-bold text-red-500 tracking-[0.12em]" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
               BATTLE-DESTROYER
             </h1>
           </div>
@@ -209,6 +173,16 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
           )}
 
           <form onSubmit={submit} className="space-y-4">
+            {/* ── Honeypot — hidden from real users, bots fill it ── */}
+            <input
+              name="hp"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              style={{ display: 'none' }}
+            />
+
             <div>
               <label className={`bd-label ${dark ? '' : 'text-slate-500'}`}>Email</label>
               <input
@@ -232,36 +206,13 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
                 Human Verification
               </label>
 
-              <div
-                className={`rounded-xl border overflow-hidden transition-all duration-200 ${captchaReady
-                    ? 'border-green-500/30 bg-green-500/[0.04]'
-                    : dark
-                      ? 'border-white/[0.1] bg-white/[0.03]'
-                      : 'border-slate-200 bg-slate-50'
-                  }`}
-              >
-                <div className={`px-2 pt-2 ${dark ? 'bg-white/[0.02]' : 'bg-white'}`}>
-                  <TurnstileWidget
-                    ref={turnstileRef}
-                    onVerify={handleVerify}
-                    onExpire={resetCaptcha}
-                    onError={resetCaptcha}
-                    theme={theme}
-                  />
-                </div>
-
-                <div
-                  className={`flex items-center gap-2 px-3 py-2 text-xs border-t transition-colors duration-300 ${captchaReady
-                      ? 'border-green-500/20 text-green-400'
-                      : dark
-                        ? 'border-white/[0.06] text-slate-600'
-                        : 'border-slate-100 text-slate-400'
-                    }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${captchaReady ? 'bg-green-400' : 'bg-current'}`} />
-                  {captchaReady ? 'Verified — you\'re cleared to proceed' : 'Complete the check above to enable login'}
-                </div>
-              </div>
+              <CaptchaWidget
+                ref={captchaRef}
+                onVerify={handleVerify}
+                onExpire={resetCaptcha}
+                onError={resetCaptcha}
+                theme={theme}
+              />
             </div>
 
             <button

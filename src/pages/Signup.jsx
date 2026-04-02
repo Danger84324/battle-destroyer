@@ -13,37 +13,34 @@ import {
   FaCheckCircle,
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
-import TurnstileWidget from '../components/TurnstileWidget';
+import CaptchaWidget from '../components/CaptchaWidget';   // ← new
 import PasswordInput from '../components/PasswordInput';
 import PasswordStrength from '../components/PasswordStrength';
 import AnimatedBackground from '../components/AnimatedBackground';
 
-const TOKEN_MAX_AGE_MS = 270_000;
-
 const FEATURES = [
-  { icon: FaGift, text: '3 free credits on signup' },
-  { icon: FaLink, text: '+2 credits per referral' },
-  { icon: FaLock, text: 'Device fingerprint protection' },
-  { icon: FaShieldAlt, text: 'Access to Attack Hub' },
+  { icon: FaGift,     text: '3 free credits on signup' },
+  { icon: FaLink,     text: '+2 credits per referral' },
+  { icon: FaLock,     text: 'Device fingerprint protection' },
+  { icon: FaShieldAlt,text: 'Access to Attack Hub' },
 ];
 
 export default function Signup({ toggleTheme, theme, setIsAuth }) {
   const [form, setForm] = useState({ username: '', email: '', password: '', referralCode: '' });
   const [captchaReady, setCaptchaReady] = useState(false);
-  const [fingerprint, setFingerprint] = useState('');
-  const [error, setError] = useState('');
+  const [fingerprint, setFingerprint]   = useState('');
+  const [error,   setError]   = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const captchaTokenRef = useRef('');
-  const captchaIssuedRef = useRef(null);
-  const expiryTimerRef = useRef(null);
-  const turnstileRef = useRef(null);
+  // Stores { challengeId, solution, answer } from CaptchaWidget
+  const captchaDataRef = useRef(null);
+  const captchaRef     = useRef(null);
 
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-  const dark = theme !== 'light';
+  const navigate  = useNavigate();
+  const API_URL   = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const dark      = theme !== 'light';
 
   useEffect(() => {
     FingerprintJS.load().then(fp => fp.get()).then(r => setFingerprint(r.visitorId));
@@ -51,48 +48,38 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
     if (ref) setForm(f => ({ ...f, referralCode: ref }));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => () => clearTimeout(expiryTimerRef.current), []);
-
   const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const resetCaptcha = useCallback(() => {
-    captchaTokenRef.current = '';
-    captchaIssuedRef.current = null;
+    captchaDataRef.current = null;
     setCaptchaReady(false);
-    clearTimeout(expiryTimerRef.current);
-    turnstileRef.current?.reset();
+    captchaRef.current?.reset();
   }, []);
 
-  const handleVerify = useCallback((token) => {
-    captchaTokenRef.current = token;
-    captchaIssuedRef.current = Date.now();
+  // Called by CaptchaWidget once PoW + puzzle are both solved
+  const handleVerify = useCallback((data) => {
+    captchaDataRef.current = data;  // { challengeId, solution, answer }
     setCaptchaReady(true);
-    clearTimeout(expiryTimerRef.current);
-    expiryTimerRef.current = setTimeout(resetCaptcha, TOKEN_MAX_AGE_MS);
-  }, [resetCaptcha]);
+  }, []);
 
   const submit = async e => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    const token = captchaTokenRef.current;
-    const issuedAt = captchaIssuedRef.current;
-
-    if (!token) return setError('Please complete the CAPTCHA.');
-    if (!issuedAt || Date.now() - issuedAt > TOKEN_MAX_AGE_MS) {
-      resetCaptcha();
-      return setError('CAPTCHA expired. Please solve it again.');
-    }
-    if (!fingerprint) return setError('Fingerprint not ready, please wait a moment.');
+    if (!captchaDataRef.current) return setError('Please complete the human check.');
+    if (!fingerprint)            return setError('Fingerprint not ready, please wait a moment.');
 
     setLoading(true);
     try {
       const { data } = await axios.post(`${API_URL}/api/auth/signup`, {
-        ...form, captchaToken: token, fingerprint,
+        ...form,
+        ...captchaDataRef.current,  // challengeId + solution + answer
+        fingerprint,
+        hp: '',                     // honeypot — always blank for real users
       });
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('user',  JSON.stringify(data.user));
       setSuccess(data.message || 'Account created! Redirecting…');
       setIsAuth(true);
       setTimeout(() => navigate('/dashboard'), 1500);
@@ -107,7 +94,7 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
   const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${dark
     ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/10'
     : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
-    }`;
+  }`;
 
   return (
     <div className={`relative min-h-screen flex transition-colors duration-300 ${dark ? 'bg-surface-950' : 'bg-slate-50'}`}>
@@ -124,7 +111,6 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
           className="absolute top-1/3 left-1/3 w-64 h-64 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.08) 0%, transparent 70%)' }}
         />
-
         <div className="relative text-center px-10 z-10">
           <div className="flex justify-center mb-6">
             <div className="relative">
@@ -162,8 +148,9 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
       <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 relative z-10 overflow-y-auto">
         <button
           onClick={toggleTheme}
-          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
-            }`}
+          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+            dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
+          }`}
         >
           {dark ? <MdWbSunny size={17} /> : <MdNightlight size={17} />}
         </button>
@@ -199,6 +186,16 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
           )}
 
           <form onSubmit={submit} className="space-y-4">
+            {/* ── Honeypot — hidden from real users, bots fill it ── */}
+            <input
+              name="hp"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              style={{ display: 'none' }}
+            />
+
             <div>
               <label className="bd-label">Username</label>
               <input name="username" value={form.username} onChange={handle} required placeholder="WarriorXX (3–20 chars)" className={inputCls} />
@@ -227,36 +224,13 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
                 Human Verification
               </label>
 
-              <div
-                className={`rounded-xl border overflow-hidden transition-all duration-200 ${captchaReady
-                    ? 'border-green-500/30 bg-green-500/[0.04]'
-                    : dark
-                      ? 'border-white/[0.1] bg-white/[0.03]'
-                      : 'border-slate-200 bg-slate-50'
-                  }`}
-              >
-                <div className={`px-2 pt-2 ${dark ? 'bg-white/[0.02]' : 'bg-white'}`}>
-                  <TurnstileWidget
-                    ref={turnstileRef}
-                    onVerify={handleVerify}
-                    onExpire={resetCaptcha}
-                    onError={resetCaptcha}
-                    theme={theme}
-                  />
-                </div>
-
-                <div
-                  className={`flex items-center gap-2 px-3 py-2 text-xs border-t transition-colors duration-300 ${captchaReady
-                      ? 'border-green-500/20 text-green-400'
-                      : dark
-                        ? 'border-white/[0.06] text-slate-600'
-                        : 'border-slate-100 text-slate-400'
-                    }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${captchaReady ? 'bg-green-400' : 'bg-current'}`} />
-                  {captchaReady ? 'Verified — you\'re cleared to proceed' : 'Complete the check above to enable login'}
-                </div>
-              </div>
+              <CaptchaWidget
+                ref={captchaRef}
+                onVerify={handleVerify}
+                onExpire={resetCaptcha}
+                onError={resetCaptcha}
+                theme={theme}
+              />
             </div>
 
             <button
