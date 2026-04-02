@@ -354,10 +354,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     }, []);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        axios.get(`${API_URL}/api/panel/stats`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
+        axios.get(`${API_URL}/api/panel/stats`)
             .then(r => setStats(r.data))
             .catch(() => {});
     }, [API_URL]);
@@ -470,9 +467,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             setForm({ ip: '', port: '', duration: '' });
             
             // Refresh stats after attack
-            axios.get(`${API_URL}/api/panel/stats`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
+            axios.get(`${API_URL}/api/panel/stats`)
                 .then(r => setStats(r.data))
                 .catch(() => {});
                 
