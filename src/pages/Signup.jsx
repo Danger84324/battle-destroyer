@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../utils/apiClient'; // Use apiClient instead of axios
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
-import CryptoJS from 'crypto-js';
 import {
   FaBullseye,
   FaGift,
@@ -14,7 +13,7 @@ import {
   FaCheckCircle,
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
-import HCaptchaWidget from '../components/HCaptchaWidget'; // Import hCaptcha
+import HCaptchaWidget from '../components/HCaptchaWidget';
 import PasswordInput from '../components/PasswordInput';
 import PasswordStrength from '../components/PasswordStrength';
 import AnimatedBackground from '../components/AnimatedBackground';
@@ -34,14 +33,11 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const ENCRYPTION_KEY = process.env.REACT_APP_ENCRYPTION_KEY || 'your-secret-key-2024-battle-destroyer';
-
   const captchaDataRef = useRef(null);
   const captchaRef = useRef(null);
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const dark = theme !== 'light';
 
   useEffect(() => {
@@ -58,85 +54,41 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
     captchaRef.current?.reset();
   }, []);
 
-  // Handle hCaptcha verification
   const handleVerify = useCallback((captchaData) => {
-    // captchaData contains { token, ekey, timestamp } from HCaptchaWidget
     captchaDataRef.current = captchaData;
     setCaptchaReady(true);
   }, []);
-
-  const encryptData = (data) => {
-    try {
-      const jsonString = JSON.stringify(data);
-      const encrypted = CryptoJS.AES.encrypt(jsonString, ENCRYPTION_KEY).toString();
-      return encrypted;
-    } catch (error) {
-      console.error('Encryption error:', error);
-      throw new Error('Failed to encrypt data');
-    }
-  };
-
-  const createHash = (data) => {
-    const jsonString = JSON.stringify(data);
-    return CryptoJS.SHA256(jsonString + ENCRYPTION_KEY).toString();
-  };
-
-  const decryptResponse = (encryptedData, hash) => {
-    try {
-      const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
-      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-      if (!decrypted) throw new Error('Decryption failed');
-      const parsed = JSON.parse(decrypted);
-
-      const calculatedHash = CryptoJS.SHA256(JSON.stringify(parsed) + ENCRYPTION_KEY).toString();
-      if (calculatedHash !== hash) {
-        throw new Error('Response hash verification failed');
-      }
-
-      return parsed;
-    } catch (error) {
-      console.error('Response decryption error:', error);
-      throw new Error('Failed to decrypt response');
-    }
-  };
 
   const submit = async e => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (!captchaDataRef.current) return setError('Please complete the human check.');
-    if (!fingerprint) return setError('Fingerprint not ready, please wait a moment.');
+    if (!captchaDataRef.current) {
+      setError('Please complete the human check.');
+      return;
+    }
+    
+    if (!fingerprint) {
+      setError('Fingerprint not ready, please wait a moment.');
+      return;
+    }
 
     setLoading(true);
     try {
-      const requestData = {
+      // Use apiClient instead of raw axios - it handles encryption automatically
+      const response = await apiClient.post('/api/auth/signup', {
         username: form.username,
         email: form.email,
         password: form.password,
         referralCode: form.referralCode,
-        captchaData: captchaDataRef.current, // This is { token, ekey, timestamp }
+        captchaData: captchaDataRef.current,
         fingerprint: fingerprint,
         hp: '',
-        timestamp: Date.now(),
-      };
-
-      const dataHash = createHash(requestData);
-      const encryptedPayload = encryptData(requestData);
-
-      const response = await axios.post(`${API_URL}/api/auth/signup`, {
-        encrypted: encryptedPayload,
-        hash: dataHash,
-        clientVersion: '1.0.0',
       });
 
-      // Check if response is encrypted
-      if (!response.data.encrypted || !response.data.hash) {
-        throw new Error('Invalid response format');
-      }
-
-      // Decrypt the response
-      const decryptedResponse = decryptResponse(response.data.encrypted, response.data.hash);
+      // apiClient already decrypts the response
+      const decryptedResponse = response.data;
 
       if (!decryptedResponse.success) {
         throw new Error(decryptedResponse.message);
@@ -148,6 +100,7 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
       setIsAuth(true);
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
+      // The error message is already extracted by apiClient
       setError(err.message || 'Signup failed. Please try again.');
       resetCaptcha();
     } finally {

@@ -1,17 +1,3 @@
-/**
- * apiClient.js
- *
- * Drop-in axios instance that:
- *  • attaches the Bearer token automatically
- *  • wraps every request  in { encrypted, hash, timestamp }
- *  • unwraps every response from { encrypted, hash } → plain JS object
- *
- * Usage:
- *   import api from '../utils/apiClient';
- *   const user = await api.get('/api/panel/me');          // returns plain object
- *   const res  = await api.post('/api/panel/attack', data); // plain object
- */
-
 import axios from 'axios';
 import {
     decryptResponse,
@@ -33,12 +19,10 @@ apiClient.interceptors.request.use((config) => {
     }
 
     if (config.method === 'get' || config.method === 'delete') {
-        // Merge any existing params into the encrypted envelope
         config.params = buildEncryptedParams(config.params ?? {});
     } else {
-        // POST / PUT / PATCH – merge body data into encrypted envelope
-        const extra = config._extra ?? {};          // e.g. { clientVersion: '1.0.0' }
-        config.data  = buildEncryptedPayload(config.data ?? {}, extra);
+        const extra = config._extra ?? {};
+        config.data = buildEncryptedPayload(config.data ?? {}, extra);
     }
 
     return config;
@@ -49,37 +33,70 @@ apiClient.interceptors.response.use(
     (response) => {
         const { encrypted, hash } = response.data ?? {};
         if (encrypted && hash) {
-            // Replace the raw axios response data with the decrypted payload
-            response.data = decryptResponse(encrypted, hash);
+            try {
+                response.data = decryptResponse(encrypted, hash);
+            } catch (error) {
+                console.error('Failed to decrypt response:', error);
+                throw new Error('Failed to process server response');
+            }
         }
         return response;
     },
-    (error) => {
-        // Try to decrypt error responses too
-        const errData = error.response?.data;
-        if (errData?.encrypted && errData?.hash) {
+    async (error) => {
+        // Handle network errors
+        if (!error.response) {
+            error.message = 'Network error. Please check your connection.';
+            return Promise.reject(error);
+        }
+
+        const errorData = error.response?.data;
+        
+        // Try to decrypt error response if encrypted
+        if (errorData?.encrypted && errorData?.hash) {
             try {
-                const decrypted = decryptResponse(errData.encrypted, errData.hash);
-                // Attach a clean `message` so callers can do: err.decrypted.message
-                error.decrypted = decrypted;
-                error.message   = decrypted.message || error.message;
-            } catch {
-                // leave error as-is if decryption fails
+                const decrypted = decryptResponse(errorData.encrypted, errorData.hash);
+                // Create a new error with the decrypted message
+                const customError = new Error(decrypted.message || 'An error occurred');
+                customError.decrypted = decrypted;
+                customError.response = error.response;
+                customError.status = error.response.status;
+                return Promise.reject(customError);
+            } catch (decryptError) {
+                console.error('Failed to decrypt error response:', decryptError);
+                // Fall back to status message
+                error.message = getErrorMessage(error.response.status);
+                return Promise.reject(error);
             }
         }
+        
+        // Handle non-encrypted errors (should not happen with proper backend)
+        error.message = getErrorMessage(error.response.status) || error.message || 'An error occurred';
         return Promise.reject(error);
     }
 );
 
+// Helper function to get user-friendly error messages
+function getErrorMessage(status) {
+    switch (status) {
+        case 400:
+            return 'Invalid request. Please check your input.';
+        case 401:
+            return 'Please login to continue.';
+        case 403:
+            return 'You don\'t have permission to access this resource.';
+        case 404:
+            return 'Resource not found.';
+        case 409:
+            return 'Conflict with existing data.';
+        case 429:
+            return 'Too many requests. Please try again later.';
+        case 500:
+            return 'Server error. Please try again later.';
+        default:
+            return `Request failed with status ${status}`;
+    }
+}
+
 export default apiClient;
 
-/* ─── convenience re-export so callers can pass captcha inline ─ */
-/**
- * Pass a `captchaData` object returned by your CaptchaWidget into a POST body.
- * The interceptor will include it inside the encrypted envelope automatically.
- *
- * Example:
- *   await api.post('/api/panel/attack', {
- *       ip, port, duration, captchaData
- *   }, { _extra: { clientVersion: '1.0.0' } });
- */
+export { buildEncryptedPayload, buildEncryptedParams };

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import CryptoJS from 'crypto-js';
+import apiClient from '../utils/apiClient'; // Use apiClient
 import {
   FaBullseye,
   FaGem,
@@ -12,12 +11,9 @@ import {
   FaExclamationCircle,
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
-import HCaptchaWidget from '../components/HCaptchaWidget'; // Changed to hCaptcha
+import HCaptchaWidget from '../components/HCaptchaWidget';
 import PasswordInput from '../components/PasswordInput';
 import AnimatedBackground from '../components/AnimatedBackground';
-
-// Add encryption key (should match backend)
-const ENCRYPTION_KEY = process.env.REACT_APP_ENCRYPTION_KEY || 'your-secret-key-2024-battle-destroyer';
 
 export default function Login({ toggleTheme, theme, setIsAuth }) {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -25,12 +21,10 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Stores captcha data from HCaptchaWidget
   const captchaDataRef = useRef(null);
   const captchaRef = useRef(null);
 
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const dark = theme !== 'light';
 
   const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -41,48 +35,7 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
     captchaRef.current?.reset();
   }, []);
 
-  // Function to encrypt data before sending
-  const encryptData = (data) => {
-    try {
-      const jsonString = JSON.stringify(data);
-      const encrypted = CryptoJS.AES.encrypt(jsonString, ENCRYPTION_KEY).toString();
-      return encrypted;
-    } catch (error) {
-      console.error('Encryption error:', error);
-      throw new Error('Failed to encrypt data');
-    }
-  };
-
-  // Function to create SHA256 hash for integrity
-  const createHash = (data) => {
-    const jsonString = JSON.stringify(data);
-    return CryptoJS.SHA256(jsonString + ENCRYPTION_KEY).toString();
-  };
-
-  // Function to decrypt response from server
-  const decryptResponse = (encryptedData, hash) => {
-    try {
-      const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
-      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-      if (!decrypted) throw new Error('Decryption failed');
-      const parsed = JSON.parse(decrypted);
-
-      // Verify hash of decrypted data
-      const calculatedHash = CryptoJS.SHA256(JSON.stringify(parsed) + ENCRYPTION_KEY).toString();
-      if (calculatedHash !== hash) {
-        throw new Error('Response hash verification failed');
-      }
-
-      return parsed;
-    } catch (error) {
-      console.error('Response decryption error:', error);
-      throw new Error('Failed to decrypt response');
-    }
-  };
-
-  // Called by HCaptchaWidget once captcha is solved
   const handleVerify = useCallback((captchaData) => {
-    // captchaData contains { token, ekey, timestamp }
     captchaDataRef.current = captchaData;
     setCaptchaReady(true);
   }, []);
@@ -91,34 +44,22 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
     e.preventDefault();
     setError('');
 
-    if (!captchaDataRef.current) return setError('Please complete the human check.');
+    if (!captchaDataRef.current) {
+      setError('Please complete the human check.');
+      return;
+    }
 
     setLoading(true);
     try {
-      const requestData = {
+      const response = await apiClient.post('/api/auth/login', {
         email: form.email,
         password: form.password,
-        captchaData: captchaDataRef.current, // Send the captcha data object
+        captchaData: captchaDataRef.current,
         hp: '',
-        timestamp: Date.now(),
-      };
-
-      const dataHash = createHash(requestData);
-      const encryptedPayload = encryptData(requestData);
-
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
-        encrypted: encryptedPayload,
-        hash: dataHash,
-        clientVersion: '1.0.0',
       });
 
-      // Check if response is encrypted
-      if (!response.data.encrypted || !response.data.hash) {
-        throw new Error('Invalid response format');
-      }
-
-      // Decrypt the response
-      const decryptedResponse = decryptResponse(response.data.encrypted, response.data.hash);
+      // apiClient already decrypts the response
+      const decryptedResponse = response.data;
 
       if (!decryptedResponse.success) {
         throw new Error(decryptedResponse.message);
@@ -146,7 +87,6 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
       <AnimatedBackground intensity={0.6} />
       <div className="fixed inset-0 bg-grid opacity-20 pointer-events-none z-0" />
 
-      {/* ── Left decorative panel ── */}
       <div className="hidden lg:flex lg:w-[45%] relative items-center justify-center overflow-hidden z-10">
         <div
           className="absolute inset-0"
@@ -203,7 +143,6 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
         </div>
       </div>
 
-      {/* ── Right panel (form) ── */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 relative z-10">
         <button
           onClick={toggleTheme}
@@ -214,7 +153,6 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
         </button>
 
         <div className="w-full max-w-sm">
-          {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <img src="/logo512.png" alt="Battle Destroyer" className="w-16 h-16 object-contain mx-auto mb-3" />
             <h1 className="text-2xl font-bold text-red-500 tracking-[0.12em]" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
@@ -240,7 +178,6 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
           )}
 
           <form onSubmit={submit} className="space-y-4">
-            {/* ── Honeypot — hidden from real users, bots fill it ── */}
             <input
               name="hp"
               type="text"
@@ -266,7 +203,6 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
               />
             </div>
 
-            {/* ── HCAPTCHA SECTION ── */}
             <div>
               <label className={`bd-label flex items-center gap-1.5 mb-1.5 ${dark ? '' : 'text-slate-500'}`}>
                 <FaShieldAlt size={10} className="text-red-500/70" />
