@@ -1,5 +1,6 @@
+// Reseller.jsx (Updated with CAPTCHA and encryption)
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import axios from 'axios';
+import resellerApiClient from '../utils/resellerApiClient'; // Use encrypted API client
 import gsap from 'gsap';
 import {
     FaBolt, FaGem, FaCrown, FaHistory,
@@ -9,6 +10,8 @@ import {
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight, MdRadar } from 'react-icons/md';
 import AnimatedBackground from '../components/AnimatedBackground';
+import HCaptchaWidget from '../components/HCaptchaWidget'; // Add CAPTCHA component
+import PasswordInput from '../components/PasswordInput'; // Add PasswordInput component
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -110,6 +113,11 @@ export default function Reseller({ toggleTheme, theme }) {
     const [token, setToken] = useState('');
     const [reseller, setReseller] = useState(null);
 
+    // CAPTCHA state
+    const [captchaReady, setCaptchaReady] = useState(false);
+    const captchaDataRef = useRef(null);
+    const captchaRef = useRef(null);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [searchLoading, setSearchLoading] = useState(false);
     const [foundUser, setFoundUser] = useState(null);
@@ -131,11 +139,21 @@ export default function Reseller({ toggleTheme, theme }) {
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
     }, []);
 
+    const resetCaptcha = useCallback(() => {
+        captchaDataRef.current = null;
+        setCaptchaReady(false);
+        captchaRef.current?.reset();
+    }, []);
+
+    const handleCaptchaVerify = useCallback((captchaData) => {
+        captchaDataRef.current = captchaData;
+        setCaptchaReady(true);
+    }, []);
+
     const fetchStats = useCallback(async (authToken) => {
         try {
-            const { data } = await axios.get(`${API_URL}/api/reseller/stats`, {
-                headers: { Authorization: `Bearer ${authToken}` },
-                withCredentials: true
+            const { data } = await resellerApiClient.get(`${API_URL}/api/reseller/stats`, {
+                headers: { Authorization: `Bearer ${authToken}` }
             });
             setStats(data);
         } catch (err) {
@@ -156,9 +174,8 @@ export default function Reseller({ toggleTheme, theme }) {
             setIsLoggedIn(true);
             fetchStats(savedToken);
 
-            axios.get(`${API_URL}/api/reseller/me`, {
-                headers: { Authorization: `Bearer ${savedToken}` },
-                withCredentials: true
+            resellerApiClient.get(`${API_URL}/api/reseller/me`, {
+                headers: { Authorization: `Bearer ${savedToken}` }
             }).then(({ data }) => {
                 const fresh = data.reseller ?? data;
                 setReseller(fresh);
@@ -199,15 +216,34 @@ export default function Reseller({ toggleTheme, theme }) {
 
     const doLogin = async () => {
         setLoginError('');
+        // ❌ Remove this line - don't reset before checking!
+        // resetCaptcha();  
+
         if (!loginForm.username) { setLoginError('Username is required'); return; }
         if (!loginForm.password) { setLoginError('Password is required'); return; }
+
+        // Check CAPTCHA
+        if (!captchaDataRef.current) {
+            setLoginError('Please complete the human verification.');
+            return;
+        }
+
         setLoginLoading(true);
         try {
-            const csrfRes = await axios.get(`${API_URL}/api/csrf-token`, { withCredentials: true });
-            const { data } = await axios.post(`${API_URL}/api/reseller/login`,
-                { username: loginForm.username, password: loginForm.password },
-                { withCredentials: true, headers: { 'X-CSRF-Token': csrfRes.data.csrfToken } }
-            );
+            const response = await resellerApiClient.post(`${API_URL}/api/reseller/login`, {
+                username: loginForm.username,
+                password: loginForm.password,
+                captchaData: captchaDataRef.current,
+                hp: '', // Honeypot field
+            });
+
+            // Response is automatically decrypted by apiClient
+            const data = response.data;
+
+            if (!data.token) {
+                throw new Error('Invalid response from server');
+            }
+
             setToken(data.token);
             setReseller(data.reseller);
             setIsLoggedIn(true);
@@ -215,9 +251,15 @@ export default function Reseller({ toggleTheme, theme }) {
             localStorage.setItem('resellerData', JSON.stringify(data.reseller));
             await fetchStats(data.token);
             toast('Login successful!');
+
+            // Only reset CAPTCHA after successful login
+            resetCaptcha();
         } catch (err) {
-            setLoginError(err.response?.data?.message || 'Login failed');
-            toast(err.response?.data?.message || 'Login failed', 'error');
+            const errorMsg = err.response?.data?.message || err.message || 'Login failed';
+            setLoginError(errorMsg);
+            toast(errorMsg, 'error');
+            // Reset CAPTCHA on error so user can try again
+            resetCaptcha();
         } finally {
             setLoginLoading(false);
         }
@@ -242,9 +284,9 @@ export default function Reseller({ toggleTheme, theme }) {
         if (searchQuery.trim().length < 3) { setSearchError('Enter at least 3 characters'); return; }
         setSearchLoading(true);
         try {
-            const { data } = await axios.get(
+            const { data } = await resellerApiClient.get(
                 `${API_URL}/api/reseller/search-user?query=${encodeURIComponent(searchQuery)}`,
-                { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             setFoundUser(data);
         } catch (err) {
@@ -265,19 +307,14 @@ export default function Reseller({ toggleTheme, theme }) {
         }
         setGiveLoading(true);
         try {
-            const csrfRes = await axios.get(`${API_URL}/api/csrf-token`, { withCredentials: true });
-            const { data } = await axios.post(
+            const { data } = await resellerApiClient.post(
                 `${API_URL}/api/reseller/give-pro`,
                 {
                     userId: foundUser.userId || foundUser.email,
                     planLabel: selectedPlan.label
                 },
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'X-CSRF-Token': csrfRes.data.csrfToken
-                    },
-                    withCredentials: true
+                    headers: { Authorization: `Bearer ${token}` }
                 }
             );
 
@@ -324,8 +361,8 @@ export default function Reseller({ toggleTheme, theme }) {
 
     const refreshMe = async () => {
         try {
-            const { data } = await axios.get(`${API_URL}/api/reseller/me`,
-                { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
+            const { data } = await resellerApiClient.get(`${API_URL}/api/reseller/me`,
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             const resellerData = data.reseller ?? data;
             setReseller(resellerData);
@@ -385,17 +422,43 @@ export default function Reseller({ toggleTheme, theme }) {
                     <div className="space-y-4">
                         <div>
                             <label className={`block text-xs font-semibold uppercase tracking-[0.1em] mb-2 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Username or Email</label>
-                            <input className={inputCls} placeholder="your_username" value={loginForm.username}
+                            <input
+                                name="username"
+                                className={inputCls}
+                                placeholder="your_username"
+                                value={loginForm.username}
                                 onChange={e => setLoginForm(p => ({ ...p, username: e.target.value }))}
-                                onKeyDown={e => e.key === 'Enter' && doLogin()} />
+                                onKeyDown={e => e.key === 'Enter' && doLogin()}
+                            />
                         </div>
                         <div>
                             <label className={`block text-xs font-semibold uppercase tracking-[0.1em] mb-2 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Password</label>
-                            <input type="password" className={inputCls} placeholder="••••••••" value={loginForm.password}
-                                onChange={e => setLoginForm(p => ({ ...p, password: e.target.value }))}
-                                onKeyDown={e => e.key === 'Enter' && doLogin()} />
+                            <PasswordInput
+                                name="password"
+                                value={loginForm.password}
+                                onChange={(e) => setLoginForm(p => ({ ...p, password: e.target.value }))}
+                                theme={theme}
+                                placeholder="Enter your password"
+                                onKeyDown={e => e.key === 'Enter' && doLogin()}
+                            />
                         </div>
-                        <button onClick={doLogin} disabled={loginLoading}
+
+                        {/* CAPTCHA Section */}
+                        <div>
+                            <label className={`flex items-center gap-1.5 mb-1.5 text-xs font-semibold uppercase tracking-[0.1em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                <FaShieldAlt size={10} className="text-red-500/70" />
+                                Human Verification
+                            </label>
+                            <HCaptchaWidget
+                                ref={captchaRef}
+                                onVerify={handleCaptchaVerify}
+                                onExpire={resetCaptcha}
+                                onError={resetCaptcha}
+                                theme={theme}
+                            />
+                        </div>
+
+                        <button onClick={doLogin} disabled={loginLoading || !captchaReady}
                             className="w-full py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-500 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
                             style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.08em', boxShadow: '0 4px 20px rgba(220,38,38,0.35)' }}>
                             {loginLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaShieldAlt size={14} />}
@@ -410,7 +473,7 @@ export default function Reseller({ toggleTheme, theme }) {
 
     const availableCredits = reseller?.credits ?? 0;
 
-    // ── MAIN PANEL ────────────────────────────────────────────────────────────
+    // ── MAIN PANEL (Rest of your component remains the same) ──
     return (
         <div className={`relative min-h-screen transition-colors duration-300 ${dark ? 'bg-surface-950' : 'bg-slate-50'}`}>
             <AnimatedBackground intensity={0.3} />
@@ -844,7 +907,7 @@ export default function Reseller({ toggleTheme, theme }) {
                             </div>
                             <div className="space-y-2">
                                 {[
-                                    { credits: 5000,  inr: '5,000',  usdt: '55$',  label: 'Starter' },
+                                    { credits: 5000, inr: '5,000', usdt: '55$', label: 'Starter' },
                                     { credits: 10000, inr: '10,000', usdt: '108$', label: 'Growth', popular: true },
                                     { credits: 20000, inr: '20,000', usdt: '215$', label: 'Elite' },
                                 ].map((pkg, i) => (
