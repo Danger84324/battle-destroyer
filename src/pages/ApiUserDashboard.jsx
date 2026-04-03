@@ -89,21 +89,6 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
         await fetchDashboardData();
     };
 
-    const stopAttack = async (attackId) => {
-        try {
-            const apiKey = localStorage.getItem('apiUserApiKey');
-            await axios.post(`${API_URL}/api/v1/stop-attack`, { attackId }, {
-                headers: { 'x-api-key': apiKey }
-            });
-            toast('Attack stopped successfully');
-            refreshData();
-        } catch (err) {
-            const errorMsg = err.response?.data?.error || err.message || 'Failed to stop attack';
-            toast(errorMsg, 'error');
-            console.error('Stop attack error:', err);
-        }
-    };
-
     useEffect(() => {
         if (!token) {
             window.location.href = '/api';
@@ -255,9 +240,6 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
                                                 <p className={`text-sm font-mono ${dark ? 'text-white' : 'text-slate-900'}`}>{attack.target}:{attack.port}</p>
                                                 <p className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Expires in {attack.expiresIn}s</p>
                                             </div>
-                                            <button onClick={() => stopAttack(attack.attackId)} className="px-3 py-1 rounded-lg text-xs font-semibold bg-red-500 text-white hover:bg-red-600 transition-all">
-                                                <FaStopCircle size={10} className="inline mr-1" /> Stop
-                                            </button>
                                         </div>
                                     </div>
                                 ))}
