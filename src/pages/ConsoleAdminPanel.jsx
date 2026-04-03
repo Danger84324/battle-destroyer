@@ -53,7 +53,7 @@ apiClient.interceptors.request.use(
         if (token) {
             config.headers['x-admin-token'] = token;
         }
-        
+
         // Add CSRF token for non-GET requests
         if (config.method !== 'get' && !config.skipCsrf) {
             try {
@@ -63,11 +63,12 @@ apiClient.interceptors.request.use(
                 console.error('Failed to get CSRF token:', err);
             }
         }
-        
+
         return config;
     },
     (error) => Promise.reject(error)
 );
+
 
 // Add response interceptor to handle 401 errors and decrypt responses
 apiClient.interceptors.response.use(
@@ -121,7 +122,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const [loginError, setLoginError] = useState('');
     const [loginLoading, setLoginLoading] = useState(false);
     const [token, setToken] = useState('');
-    
+
     // ── Captcha ────────────────────────────────────────────────
     const [captchaReady, setCaptchaReady] = useState(false);
     const captchaDataRef = useRef(null);
@@ -241,12 +242,12 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             ...data,
             timestamp: Date.now()
         };
-        
+
         const encrypted = encryptData(payload);
         const hash = createHash(payload);
-        
+
         const requestBody = { encrypted, hash };
-        
+
         const response = await apiClient[method](url, requestBody, config);
         return response;
     }, []);
@@ -373,21 +374,21 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const doLogin = async () => {
         setLoginError('');
         if (!adminSecret) { setLoginError('Admin secret is required'); return; }
-        
+
         if (!captchaDataRef.current) {
             setLoginError('Please complete the human verification');
             return;
         }
-        
+
         setLoginLoading(true);
         try {
-            const response = await makeEncryptedRequest('post', `${API_URL}/api/admin/session`, { 
+            const response = await makeEncryptedRequest('post', `${API_URL}/api/admin/session`, {
                 secret: adminSecret,
                 captchaData: captchaDataRef.current
             });
 
             const data = response.data;
-            
+
             if (!data.token) {
                 throw new Error(data.message || 'Login failed');
             }
@@ -536,22 +537,51 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         }
     };
 
+    // In ConsoleAdminPanel.jsx, update the saveNewApiUser function
     const saveNewApiUser = async () => {
         if (!apiUserForm.username || !apiUserForm.email) {
             toast('Username and email are required', 'error');
             return;
         }
+
+        // Sanitize username
+        const sanitizedUsername = apiUserForm.username.trim().replace(/[^a-zA-Z0-9_.-]/g, '');
+
+        if (sanitizedUsername.length < 3) {
+            toast('Username must be at least 3 characters (letters, numbers, underscores, dots, hyphens only)', 'error');
+            return;
+        }
+
         setModalLoading(true);
         try {
-            const { data } = await makeEncryptedRequest('post', `${API_URL}/api/admin/api-users`, {
-                username: apiUserForm.username,
+            // TEMPORARY: Send without encryption for testing
+            const response = await apiClient.post(`${API_URL}/api/admin/api-users`, {
+                username: sanitizedUsername,
                 email: apiUserForm.email,
                 maxConcurrent: apiUserForm.maxConcurrent,
                 maxDuration: apiUserForm.maxDuration,
                 expirationDays: apiUserForm.expirationDays || 30
+            }, {
+                headers: {
+                    'x-admin-token': token
+                }
             });
 
-            toast(`✅ API User ${data.user.username} created! Expires: ${new Date(data.user.expiresAt).toLocaleDateString()}`, 'success');
+            // If response is encrypted, decrypt it
+            let data = response.data;
+            if (data.encrypted && data.hash) {
+                try {
+                    const decryptedData = decryptData(data.encrypted);
+                    const calculatedHash = createHash(decryptedData);
+                    if (calculatedHash === data.hash) {
+                        data = decryptedData;
+                    }
+                } catch (err) {
+                    console.error('Decryption error:', err);
+                }
+            }
+
+            toast(`✅ API User ${data.user.username} created!`, 'success');
 
             setNewApiSecret(data.user.apiSecret);
             setSelectedApiUser(data.user);
@@ -561,6 +591,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             loadApiUsers(token, apiUsersSearch, apiUsersPage, apiUsersStatus);
             loadStats();
         } catch (err) {
+            console.error('Create API user error:', err);
             toast(err.response?.data?.message || 'Failed to create API user', 'error');
         } finally {
             setModalLoading(false);
@@ -787,13 +818,13 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                     </div>
                     <h1 className={`text-2xl font-black mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>ADMIN LOGIN</h1>
                     <p className={`text-xs mb-6 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Sign in with your admin secret</p>
-                    
+
                     {loginError && (
                         <div className="flex items-center gap-2 rounded-xl p-3 border border-red-500/25 bg-red-500/8 text-red-400 text-sm mb-4">
                             <FaExclamationTriangle size={12} /> {loginError}
                         </div>
                     )}
-                    
+
                     <div className="space-y-4">
                         <div>
                             <label className={labelCls}>Admin Secret</label>
@@ -801,7 +832,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                                 value={adminSecret} onChange={e => setAdminSecret(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && doLogin()} />
                         </div>
-                        
+
                         {/* CAPTCHA SECTION */}
                         <div>
                             <label className={`bd-label flex items-center gap-1.5 mb-1.5 ${dark ? '' : 'text-slate-500'}`}>
@@ -816,7 +847,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                                 theme={theme}
                             />
                         </div>
-                        
+
                         <button onClick={doLogin} disabled={loginLoading || !captchaReady}
                             className="w-full py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-500 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2">
                             {loginLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaLock size={12} />}
@@ -1306,13 +1337,30 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             {addApiUserModal && (
                 <Modal title="CREATE API USER" onClose={() => setAddApiUserModal(false)} dark={dark} size="md">
                     <div className="space-y-4">
+                        {/* In the Add API User modal, update the username field */}
                         <div>
                             <label className={labelCls}>Username *</label>
-                            <input className={inputCls}
+                            <input
+                                className={inputCls}
                                 value={apiUserForm.username}
-                                onChange={e => setApiUserForm(p => ({ ...p, username: e.target.value }))}
-                                placeholder="api_user_name" />
-                            <p className="text-[10px] mt-1 text-slate-500">3-30 chars, letters, numbers, underscore only</p>
+                                onChange={e => {
+                                    const rawValue = e.target.value;
+                                    // Show live validation
+                                    setApiUserForm(p => ({ ...p, username: rawValue }));
+                                }}
+                                placeholder="api_user_name"
+                            />
+                            {apiUserForm.username && (
+                                <p className={`text-[10px] mt-1 ${apiUserForm.username.replace(/[^a-zA-Z0-9_.-]/g, '').length >= 3
+                                    ? 'text-green-500'
+                                    : 'text-red-500'
+                                    }`}>
+                                    {apiUserForm.username.replace(/[^a-zA-Z0-9_.-]/g, '').length >= 3
+                                        ? '✓ Username is valid'
+                                        : 'Username must be 3+ chars (letters, numbers, _, ., - only)'}
+                                </p>
+                            )}
+                            <p className="text-[10px] mt-1 text-slate-500">Allowed: letters, numbers, underscores, dots, hyphens</p>
                         </div>
                         <div>
                             <label className={labelCls}>Email *</label>

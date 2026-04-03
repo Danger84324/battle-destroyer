@@ -1,6 +1,5 @@
-// src/pages/ApiUserDashboard.jsx - WITH EXPIRATION DISPLAY
+// src/pages/ApiUserDashboard.jsx - WITH ENCRYPTION SUPPORT
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import {
     FaSignOutAlt, FaKey, FaExclamationTriangle, FaBolt, FaCopy, FaCheck,
     FaCode, FaTerminal, FaPython, FaJs, FaChartLine, FaClock, FaStopCircle,
@@ -9,6 +8,8 @@ import {
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Toast from '../admin/Toast';
+import apiUserApiClient from '../utils/apiUserApiClient';
+import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -47,12 +48,14 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
     const fetchDashboardData = useCallback(async () => {
         try {
             setError(null);
-            const response = await axios.get(`${API_URL}/api/api-auth/dashboard/stats`, {
+            // Use encrypted API client instead of axios
+            const response = await apiUserApiClient.get(`${API_URL}/api/api-auth/dashboard/stats`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             console.log('Dashboard response:', response.data);
 
+            // Response is automatically decrypted by apiUserApiClient
             if (response.data.success) {
                 setUserData(response.data.user);
                 setStats(response.data.stats);
@@ -95,7 +98,9 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
             toast('Attack stopped successfully');
             refreshData();
         } catch (err) {
-            toast(err.response?.data?.error || 'Failed to stop attack', 'error');
+            const errorMsg = err.response?.data?.error || err.message || 'Failed to stop attack';
+            toast(errorMsg, 'error');
+            console.error('Stop attack error:', err);
         }
     };
 
@@ -169,7 +174,7 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
     const totalAttacks = stats.totalAttacks || 0;
     const totalRequests = stats.totalRequests || 0;
     const apiKey = localStorage.getItem('apiUserApiKey') || '';
-    
+
     // Expiration info
     const isExpired = userData.isExpired || (userData.expiresAt && new Date(userData.expiresAt) < new Date());
     const daysRemaining = userData.daysRemaining || 0;
@@ -223,14 +228,14 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
                     {/* EXPIRATION WARNING BANNER */}
                     {isExpired && (
                         <div className="mb-4 rounded-xl p-3 bg-red-500/20 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
-                            <FaExclamationTriangle size={14} /> 
+                            <FaExclamationTriangle size={14} />
                             <strong>Account Expired!</strong> Your account has expired. Please contact the administrator to renew.
                         </div>
                     )}
-                    
+
                     {isExpiringSoon && !isExpired && (
                         <div className="mb-4 rounded-xl p-3 bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 text-sm flex items-center gap-2">
-                            <FaExclamationTriangle size={14} /> 
+                            <FaExclamationTriangle size={14} />
                             <strong>⚠️ Account expiring soon!</strong> Your account will expire in {daysRemaining} day{daysRemaining !== 1 ? 's' : ''}. Contact admin to renew.
                         </div>
                     )}
@@ -284,7 +289,7 @@ export default function ApiUserDashboard({ toggleTheme, theme, onLogout }) {
                         </div>
                     </div>
 
-                    {/* EXPIRATION INFO CARD - NEW */}
+                    {/* EXPIRATION INFO CARD */}
                     <div className={`rounded-xl p-5 border mb-6 ${cardCls}`}>
                         <div className="flex items-center gap-2 mb-4">
                             <FaCalendarAlt className="text-purple-500" size={16} />

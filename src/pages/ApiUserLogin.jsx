@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { FaSignInAlt, FaExclamationTriangle, FaEye, FaEyeSlash } from 'react-icons/fa';
+// ApiUserLogin.jsx - Fixed version
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import apiUserApiClient from '../utils/apiUserApiClient';
+import { FaSignInAlt, FaExclamationTriangle, FaEye, FaEyeSlash, FaShieldAlt } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
 import AnimatedBackground from '../components/AnimatedBackground';
+import HCaptchaWidget from '../components/HCaptchaWidget';
 import Toast from '../admin/Toast';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -14,6 +16,12 @@ export default function ApiUserLogin({ toggleTheme, theme, onLogin }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [toasts, setToasts] = useState([]);
+    
+    // CAPTCHA state
+    const [captchaReady, setCaptchaReady] = useState(false);
+    const captchaDataRef = useRef(null);
+    const captchaRef = useRef(null);
+    
     const formRef = useRef(null);
 
     const toast = (message, type = 'success') => {
@@ -21,6 +29,18 @@ export default function ApiUserLogin({ toggleTheme, theme, onLogin }) {
         setToasts(prev => [...prev, { id, message, type }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
     };
+
+    const resetCaptcha = useCallback(() => {
+        captchaDataRef.current = null;
+        setCaptchaReady(false);
+        captchaRef.current?.reset();
+    }, []);
+
+    const handleCaptchaVerify = useCallback((captchaData) => {
+        console.log('CAPTCHA verified:', captchaData); // Debug log
+        captchaDataRef.current = captchaData;
+        setCaptchaReady(true);
+    }, []);
 
     useEffect(() => {
         // Check if already logged in
@@ -30,17 +50,23 @@ export default function ApiUserLogin({ toggleTheme, theme, onLogin }) {
         }
         
         // Animation
-        if (formRef.current && window.gsap) {
-            window.gsap.fromTo(formRef.current,
-                { opacity: 0, y: 40, scale: 0.95 },
-                { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'power3.out' }
-            );
+        if (formRef.current) {
+            const gsap = window.gsap;
+            if (gsap) {
+                gsap.fromTo(formRef.current,
+                    { opacity: 0, y: 40, scale: 0.95 },
+                    { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'power3.out' }
+                );
+            }
         }
     }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        
+        // ❌ REMOVE THIS LINE - Don't reset captcha before checking!
+        // resetCaptcha();
         
         if (!formData.username.trim()) {
             setError('Username is required');
@@ -51,28 +77,48 @@ export default function ApiUserLogin({ toggleTheme, theme, onLogin }) {
             return;
         }
         
+        // Check CAPTCHA
+        console.log('CAPTCHA data before submit:', captchaDataRef.current); // Debug log
+        
+        if (!captchaDataRef.current) {
+            setError('Please complete the human verification.');
+            return;
+        }
+        
         setLoading(true);
         
         try {
-            const response = await axios.post(`${API_URL}/api/api-auth/login`, {
+            const response = await apiUserApiClient.post(`${API_URL}/api/api-auth/login`, {
                 username: formData.username,
-                apiSecret: formData.apiSecret
+                apiSecret: formData.apiSecret,
+                captchaData: captchaDataRef.current,
+                hp: '', // Honeypot field
             });
+            
+            console.log('Login response:', response.data); // Debug log
             
             if (response.data.success) {
                 localStorage.setItem('apiUserToken', response.data.token);
                 localStorage.setItem('apiUserData', JSON.stringify(response.data.user));
                 toast('Login successful! Redirecting...');
                 
+                // Only reset CAPTCHA after successful login
+                resetCaptcha();
+                
                 setTimeout(() => {
                     if (onLogin) onLogin(response.data.user);
                     window.location.href = '/api-dashboard';
                 }, 1000);
+            } else {
+                setError(response.data.error || 'Login failed');
+                resetCaptcha(); // Reset on failure so user can try again
             }
         } catch (err) {
-            const errorMsg = err.response?.data?.error || 'Login failed';
+            console.error('Login error:', err); // Debug log
+            const errorMsg = err.response?.data?.error || err.message || 'Login failed';
             setError(errorMsg);
             toast(errorMsg, 'error');
+            resetCaptcha(); // Reset on error so user can try again
         } finally {
             setLoading(false);
         }
@@ -168,14 +214,32 @@ export default function ApiUserLogin({ toggleTheme, theme, onLogin }) {
                         </p>
                     </div>
                     
+                    {/* CAPTCHA Section */}
+                    <div>
+                        <label className={`flex items-center gap-1.5 mb-1.5 text-xs font-semibold uppercase tracking-[0.1em] ${
+                            dark ? 'text-slate-500' : 'text-slate-400'
+                        }`}>
+                            <FaShieldAlt size={10} className="text-cyan-500/70" />
+                            Human Verification
+                        </label>
+                        <HCaptchaWidget
+                            ref={captchaRef}
+                            onVerify={handleCaptchaVerify}
+                            onExpire={resetCaptcha}
+                            onError={resetCaptcha}
+                            theme={theme}
+                        />
+                    </div>
+                    
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || !captchaReady}
                         className={`w-full py-3.5 rounded-xl font-bold text-sm tracking-wider transition-all flex items-center justify-center gap-2 active:scale-95 disabled:active:scale-100 ${
-                            loading
-                                ? dark ? 'bg-white/[0.05] text-slate-600' : 'bg-slate-100 text-slate-400'
+                            loading || !captchaReady
+                                ? dark ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                 : 'bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white shadow-lg'
                         }`}
+                        style={{ boxShadow: captchaReady ? '0 4px 20px rgba(6, 182, 212, 0.35)' : 'none' }}
                     >
                         {loading ? (
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
