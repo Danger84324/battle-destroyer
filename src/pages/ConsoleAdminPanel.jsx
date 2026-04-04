@@ -255,12 +255,11 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const extendApiUserExpiry = async (apiUserId, days) => {
         setModalLoading(true);
         try {
-            // Make sure we're sending the days as a number
-            const response = await makeEncryptedRequest('post', `${API_URL}/api/admin/api-users/${apiUserId}/extend`, {
+            // Use plain axios post instead of makeEncryptedRequest
+            const response = await apiClient.post(`${API_URL}/api/admin/api-users/${apiUserId}/extend`, {
                 days: parseInt(days)
             });
 
-            // The response is already decrypted by the interceptor
             const data = response.data;
 
             toast(`✅ Expiration extended by ${days} days! New expiry: ${new Date(data.expiresAt).toLocaleDateString()}`);
@@ -440,55 +439,33 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         setModalLoading(true);
         try {
             const user = editUserModal;
-            const basicPayload = {
+
+            // Update basic user info
+            await apiClient.patch(`${API_URL}/api/admin/users/${user._id}`, {
                 username: userForm.username,
                 email: userForm.email,
                 credits: Number(userForm.credits),
-            };
-            if (userForm.password) basicPayload.password = userForm.password;
-
-            // First update basic user info
-            await makeEncryptedRequest('patch', `${API_URL}/api/admin/users/${user._id}`, basicPayload);
+                ...(userForm.password && { password: userForm.password })
+            });
 
             // Handle Pro subscription changes
             if (userForm.hasPro && !user.isPro) {
-                // Giving Pro for the first time
-                const proPayload = {
+                await apiClient.post(`${API_URL}/api/admin/users/${user._id}/give-pro`, {
                     planType: userForm.proPlan === 'custom' ? 'custom' : userForm.proPlan,
                     ...(userForm.proPlan === 'custom' && { customDays: userForm.proDays })
-                };
-
-                // Validate planType before sending
-                const validPlans = ['week', 'month', 'season', 'custom'];
-                if (!validPlans.includes(proPayload.planType)) {
-                    throw new Error(`Invalid plan type: ${proPayload.planType}. Must be one of: ${validPlans.join(', ')}`);
-                }
-
-                await makeEncryptedRequest('post', `${API_URL}/api/admin/users/${user._id}/give-pro`, proPayload);
+                });
                 toast(`✨ ${user.username} now has Pro access!`);
             }
             else if (!userForm.hasPro && user.isPro) {
-                // Removing Pro
-                await makeEncryptedRequest('delete', `${API_URL}/api/admin/users/${user._id}/remove-pro`);
+                await apiClient.delete(`${API_URL}/api/admin/users/${user._id}/remove-pro`);
                 toast(`❌ Removed Pro from ${user.username}`);
             }
             else if (userForm.hasPro && user.isPro) {
-                // Modifying existing Pro subscription
-                // Use the correct endpoint based on action
-                const proPayload = {
+                const endpoint = userForm.proAction === 'extend' ? 'extend-pro' : 'replace-pro';
+                await apiClient.post(`${API_URL}/api/admin/users/${user._id}/${endpoint}`, {
                     planType: userForm.proPlan === 'custom' ? 'custom' : userForm.proPlan,
                     ...(userForm.proPlan === 'custom' && { customDays: userForm.proDays })
-                };
-
-                // Validate planType before sending
-                const validPlans = ['week', 'month', 'season', 'custom'];
-                if (!validPlans.includes(proPayload.planType)) {
-                    throw new Error(`Invalid plan type: ${proPayload.planType}. Must be one of: ${validPlans.join(', ')}`);
-                }
-
-                // Use 'extend-pro' or 'replace-pro' endpoints
-                const endpoint = userForm.proAction === 'extend' ? 'extend-pro' : 'replace-pro';
-                await makeEncryptedRequest('post', `${API_URL}/api/admin/users/${user._id}/${endpoint}`, proPayload);
+                });
                 toast(userForm.proAction === 'extend' ? `➕ Extended Pro for ${user.username}!` : `🔄 Replaced Pro for ${user.username}!`);
             }
 
@@ -498,7 +475,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             loadStats();
         } catch (err) {
             console.error('Save user error:', err);
-            toast(err.response?.data?.message || err.message || 'Failed to update user', 'error');
+            toast(err.response?.data?.message || 'Failed to update user', 'error');
         } finally {
             setModalLoading(false);
         }
@@ -508,7 +485,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         if (!deleteConfirm) return;
         setModalLoading(true);
         try {
-            await makeEncryptedRequest('delete', `${API_URL}/api/admin/users/${deleteConfirm._id}`);
+            await apiClient.delete(`${API_URL}/api/admin/users/${deleteConfirm._id}`);
             toast(`User ${deleteConfirm.username} deleted`);
             setDeleteConfirm(null);
             loadUsers(token, searchQuery, usersPage, userFilter);
@@ -559,7 +536,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const updateApiUserStatus = async (apiUserId, newStatus) => {
         setModalLoading(true);
         try {
-            await makeEncryptedRequest('patch', `${API_URL}/api/admin/api-users/${apiUserId}/limits`, { status: newStatus });
+            await apiClient.patch(`${API_URL}/api/admin/api-users/${apiUserId}/limits`, { status: newStatus });
             toast(`API User status updated to ${newStatus}`);
             loadApiUsers(token, apiUsersSearch, apiUsersPage, apiUsersStatus);
         } catch (err) {
@@ -576,49 +553,30 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             return;
         }
 
-        // Sanitize username
         const sanitizedUsername = apiUserForm.username.trim().replace(/[^a-zA-Z0-9_.-]/g, '');
 
         if (sanitizedUsername.length < 3) {
-            toast('Username must be at least 3 characters (letters, numbers, underscores, dots, hyphens only)', 'error');
+            toast('Username must be at least 3 characters', 'error');
             return;
         }
 
         setModalLoading(true);
         try {
-            // TEMPORARY: Send without encryption for testing
             const response = await apiClient.post(`${API_URL}/api/admin/api-users`, {
                 username: sanitizedUsername,
                 email: apiUserForm.email,
                 maxConcurrent: apiUserForm.maxConcurrent,
                 maxDuration: apiUserForm.maxDuration,
                 expirationDays: apiUserForm.expirationDays || 30
-            }, {
-                headers: {
-                    'x-admin-token': token
-                }
             });
 
-            // If response is encrypted, decrypt it
-            let data = response.data;
-            if (data.encrypted && data.hash) {
-                try {
-                    const decryptedData = decryptData(data.encrypted);
-                    const calculatedHash = createHash(decryptedData);
-                    if (calculatedHash === data.hash) {
-                        data = decryptedData;
-                    }
-                } catch (err) {
-                    console.error('Decryption error:', err);
-                }
-            }
+            const data = response.data;
 
             toast(`✅ API User ${data.user.username} created!`, 'success');
 
             setNewApiSecret(data.user.apiSecret);
             setSelectedApiUser(data.user);
             setRegenerateSecretModal(true);
-
             setAddApiUserModal(false);
             loadApiUsers(token, apiUsersSearch, apiUsersPage, apiUsersStatus);
             loadStats();
@@ -630,10 +588,11 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         }
     };
 
+
     const saveEditApiUser = async () => {
         setModalLoading(true);
         try {
-            await makeEncryptedRequest('patch', `${API_URL}/api/admin/api-users/${editApiUserModal._id}/limits`, {
+            await apiClient.patch(`${API_URL}/api/admin/api-users/${editApiUserModal._id}/limits`, {
                 maxConcurrent: apiUserForm.maxConcurrent,
                 maxDuration: apiUserForm.maxDuration
             });
@@ -652,7 +611,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         if (!selectedApiUser) return;
         setModalLoading(true);
         try {
-            const { data } = await makeEncryptedRequest('post', `${API_URL}/api/admin/api-users/${selectedApiUser._id}/regenerate-secret`);
+            const { data } = await apiClient.post(`${API_URL}/api/admin/api-users/${selectedApiUser._id}/regenerate-secret`);
             setNewApiSecret(data.apiSecret);
             setRegenerateSecretModal(true);
             toast('API Secret regenerated!');
@@ -667,7 +626,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         if (!deleteApiUserConfirm) return;
         setModalLoading(true);
         try {
-            await makeEncryptedRequest('delete', `${API_URL}/api/admin/api-users/${deleteApiUserConfirm._id}`);
+            await apiClient.delete(`${API_URL}/api/admin/api-users/${deleteApiUserConfirm._id}`);
             toast(`API User ${deleteApiUserConfirm.username} deleted`);
             setDeleteApiUserConfirm(null);
             loadApiUsers(token, apiUsersSearch, apiUsersPage, apiUsersStatus);
@@ -678,6 +637,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             setModalLoading(false);
         }
     };
+
 
     const copyToClipboard = (text, field) => {
         navigator.clipboard.writeText(text);
@@ -706,7 +666,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         }
         setModalLoading(true);
         try {
-            await makeEncryptedRequest('post', `${API_URL}/api/admin/resellers`, resellerForm);
+            await apiClient.post(`${API_URL}/api/admin/resellers`, resellerForm);
             toast(`✅ Reseller ${resellerForm.username} created!`);
             setAddResellerModal(false);
             loadResellers(token, resellerSearch, 1);
@@ -726,7 +686,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                 credits: Number(resellerForm.credits), isBlocked: resellerForm.isBlocked
             };
             if (resellerForm.password) payload.password = resellerForm.password;
-            await makeEncryptedRequest('patch', `${API_URL}/api/admin/resellers/${editResellerModal._id}`, payload);
+            await apiClient.patch(`${API_URL}/api/admin/resellers/${editResellerModal._id}`, payload);
             toast('Reseller updated successfully');
             setEditResellerModal(null);
             loadResellers(token, resellerSearch, resellersPage);
@@ -741,7 +701,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         if (!deleteResellerConfirm) return;
         setModalLoading(true);
         try {
-            await makeEncryptedRequest('delete', `${API_URL}/api/admin/resellers/${deleteResellerConfirm._id}`);
+            await apiClient.delete(`${API_URL}/api/admin/resellers/${deleteResellerConfirm._id}`);
             toast(`Reseller ${deleteResellerConfirm.username} deleted`);
             setDeleteResellerConfirm(null);
             loadResellers(token, resellerSearch, resellersPage);
