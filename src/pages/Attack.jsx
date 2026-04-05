@@ -579,8 +579,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                 <div>
                                     <label className="bd-label">Target IP Address</label>
                                     <input name="ip" value={form.ip} onChange={handle} placeholder="e.g. 203.0.113.1"
-                                        className={`${inputCls} ${errors.ip ? 'border-red-500/60' : ''}`}
-                                        disabled={attackStatus?.status === 'running'} />
+                                        className={`${inputCls} ${errors.ip ? 'border-red-500/60' : ''}`} />
                                     {errors.ip && <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1.5"><FaExclamationTriangle size={11} />{errors.ip}</p>}
                                 </div>
 
@@ -589,8 +588,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                     <div>
                                         <label className="bd-label">Port</label>
                                         <input name="port" type="number" value={form.port} onChange={handle} placeholder="e.g. 8080" min="1" max="65535"
-                                            className={`${inputCls} ${errors.port ? 'border-red-500/60' : ''}`}
-                                            disabled={attackStatus?.status === 'running'} />
+                                            className={`${inputCls} ${errors.port ? 'border-red-500/60' : ''}`}/>
                                         {errors.port && <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1.5"><FaExclamationTriangle size={11} />{errors.port}</p>}
                                     </div>
                                     <div>
@@ -603,7 +601,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                         <input name="duration" type="number" value={form.duration} onChange={handle}
                                             placeholder={`1 – ${MAX_DURATION}`} min="1" max={MAX_DURATION}
                                             className={`${inputCls} ${errors.duration ? 'border-red-500/60' : ''}`}
-                                            disabled={launching || !canAttack || attackStatus?.status === 'running' || cooldown > 0} />
+                                            disabled={launching || !canAttack || cooldown > 0} />
                                         {errors.duration && <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1.5"><FaExclamationTriangle size={11} />{errors.duration}</p>}
                                     </div>
                                 </div>
