@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../utils/apiClient'; // Use apiClient instead of axios
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import {
   FaBullseye,
@@ -13,40 +13,38 @@ import {
   FaCheckCircle,
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
-import CaptchaWidget from '../components/CaptchaWidget';   // ← new
+import HCaptchaWidget from '../components/HCaptchaWidget';
 import PasswordInput from '../components/PasswordInput';
 import PasswordStrength from '../components/PasswordStrength';
 import AnimatedBackground from '../components/AnimatedBackground';
 
 const FEATURES = [
-  { icon: FaGift,     text: '3 free credits on signup' },
-  { icon: FaLink,     text: '+2 credits per referral' },
-  { icon: FaLock,     text: 'Device fingerprint protection' },
-  { icon: FaShieldAlt,text: 'Access to Attack Hub' },
+  { icon: FaGift, text: '3 free credits on signup' },
+  { icon: FaLink, text: '+2 credits per referral' },
+  { icon: FaLock, text: 'Device fingerprint protection' },
+  { icon: FaShieldAlt, text: 'Access to Attack Hub' },
 ];
 
 export default function Signup({ toggleTheme, theme, setIsAuth }) {
   const [form, setForm] = useState({ username: '', email: '', password: '', referralCode: '' });
   const [captchaReady, setCaptchaReady] = useState(false);
-  const [fingerprint, setFingerprint]   = useState('');
-  const [error,   setError]   = useState('');
+  const [fingerprint, setFingerprint] = useState('');
+  const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Stores { challengeId, solution, answer } from CaptchaWidget
   const captchaDataRef = useRef(null);
-  const captchaRef     = useRef(null);
+  const captchaRef = useRef(null);
 
   const [searchParams] = useSearchParams();
-  const navigate  = useNavigate();
-  const API_URL   = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-  const dark      = theme !== 'light';
+  const navigate = useNavigate();
+  const dark = theme !== 'light';
 
   useEffect(() => {
     FingerprintJS.load().then(fp => fp.get()).then(r => setFingerprint(r.visitorId));
     const ref = searchParams.get('ref');
     if (ref) setForm(f => ({ ...f, referralCode: ref }));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -56,9 +54,8 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
     captchaRef.current?.reset();
   }, []);
 
-  // Called by CaptchaWidget once PoW + puzzle are both solved
-  const handleVerify = useCallback((data) => {
-    captchaDataRef.current = data;  // { challengeId, solution, answer }
+  const handleVerify = useCallback((captchaData) => {
+    captchaDataRef.current = captchaData;
     setCaptchaReady(true);
   }, []);
 
@@ -67,24 +64,44 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
     setError('');
     setSuccess('');
 
-    if (!captchaDataRef.current) return setError('Please complete the human check.');
-    if (!fingerprint)            return setError('Fingerprint not ready, please wait a moment.');
+    if (!captchaDataRef.current) {
+      setError('Please complete the human check.');
+      return;
+    }
+    
+    if (!fingerprint) {
+      setError('Fingerprint not ready, please wait a moment.');
+      return;
+    }
 
     setLoading(true);
     try {
-      const { data } = await axios.post(`${API_URL}/api/auth/signup`, {
-        ...form,
-        ...captchaDataRef.current,  // challengeId + solution + answer
-        fingerprint,
-        hp: '',                     // honeypot — always blank for real users
+      // Use apiClient instead of raw axios - it handles encryption automatically
+      const response = await apiClient.post('/api/auth/signup', {
+        username: form.username,
+        email: form.email,
+        password: form.password,
+        referralCode: form.referralCode,
+        captchaData: captchaDataRef.current,
+        fingerprint: fingerprint,
+        hp: '',
       });
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user',  JSON.stringify(data.user));
-      setSuccess(data.message || 'Account created! Redirecting…');
+
+      // apiClient already decrypts the response
+      const decryptedResponse = response.data;
+
+      if (!decryptedResponse.success) {
+        throw new Error(decryptedResponse.message);
+      }
+
+      localStorage.setItem('token', decryptedResponse.token);
+      localStorage.setItem('user', JSON.stringify(decryptedResponse.user));
+      setSuccess(decryptedResponse.message || 'Account created! Redirecting…');
       setIsAuth(true);
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed. Please try again.');
+      // The error message is already extracted by apiClient
+      setError(err.message || 'Signup failed. Please try again.');
       resetCaptcha();
     } finally {
       setLoading(false);
@@ -94,14 +111,13 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
   const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${dark
     ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/10'
     : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
-  }`;
+    }`;
 
   return (
     <div className={`relative min-h-screen flex transition-colors duration-300 ${dark ? 'bg-surface-950' : 'bg-slate-50'}`}>
       <AnimatedBackground intensity={0.6} />
       <div className="fixed inset-0 bg-grid opacity-20 pointer-events-none z-0" />
 
-      {/* ── Left panel ── */}
       <div className="hidden lg:flex lg:w-[42%] relative items-center justify-center overflow-hidden z-10">
         <div
           className="absolute inset-0"
@@ -144,19 +160,16 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
         </div>
       </div>
 
-      {/* ── Right panel ── */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 relative z-10 overflow-y-auto">
         <button
           onClick={toggleTheme}
-          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-            dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
-          }`}
+          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
+            }`}
         >
           {dark ? <MdWbSunny size={17} /> : <MdNightlight size={17} />}
         </button>
 
         <div className="w-full max-w-sm py-4">
-          {/* Mobile logo */}
           <div className="lg:hidden text-center mb-6">
             <img src="/logo512.png" alt="Battle Destroyer" className="w-14 h-14 object-contain mx-auto mb-2" />
             <h1 className="text-2xl font-bold text-red-500 tracking-[0.12em]" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
@@ -186,7 +199,6 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
           )}
 
           <form onSubmit={submit} className="space-y-4">
-            {/* ── Honeypot — hidden from real users, bots fill it ── */}
             <input
               name="hp"
               type="text"
@@ -217,14 +229,13 @@ export default function Signup({ toggleTheme, theme, setIsAuth }) {
               <input name="referralCode" value={form.referralCode} onChange={handle} placeholder="Enter referral code" className={inputCls} />
             </div>
 
-            {/* ── CAPTCHA SECTION ── */}
             <div>
               <label className={`bd-label flex items-center gap-1.5 mb-1.5 ${dark ? '' : 'text-slate-500'}`}>
                 <FaShieldAlt size={10} className="text-red-500/70" />
                 Human Verification
               </label>
 
-              <CaptchaWidget
+              <HCaptchaWidget
                 ref={captchaRef}
                 onVerify={handleVerify}
                 onExpire={resetCaptcha}

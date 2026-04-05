@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../utils/apiClient'; // Use apiClient
 import {
   FaBullseye,
   FaGem,
@@ -11,23 +11,21 @@ import {
   FaExclamationCircle,
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
-import CaptchaWidget from '../components/CaptchaWidget';   // ← new
+import HCaptchaWidget from '../components/HCaptchaWidget';
 import PasswordInput from '../components/PasswordInput';
 import AnimatedBackground from '../components/AnimatedBackground';
 
 export default function Login({ toggleTheme, theme, setIsAuth }) {
-  const [form, setForm]           = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [captchaReady, setCaptchaReady] = useState(false);
-  const [error,   setError]   = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Stores { challengeId, solution, answer } from CaptchaWidget
   const captchaDataRef = useRef(null);
-  const captchaRef     = useRef(null);
+  const captchaRef = useRef(null);
 
   const navigate = useNavigate();
-  const API_URL  = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-  const dark     = theme !== 'light';
+  const dark = theme !== 'light';
 
   const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -37,9 +35,8 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
     captchaRef.current?.reset();
   }, []);
 
-  // Called by CaptchaWidget once PoW + puzzle are both solved
-  const handleVerify = useCallback((data) => {
-    captchaDataRef.current = data;  // { challengeId, solution, answer }
+  const handleVerify = useCallback((captchaData) => {
+    captchaDataRef.current = captchaData;
     setCaptchaReady(true);
   }, []);
 
@@ -47,21 +44,33 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
     e.preventDefault();
     setError('');
 
-    if (!captchaDataRef.current) return setError('Please complete the human check.');
+    if (!captchaDataRef.current) {
+      setError('Please complete the human check.');
+      return;
+    }
 
     setLoading(true);
     try {
-      const { data } = await axios.post(`${API_URL}/api/auth/login`, {
-        ...form,
-        ...captchaDataRef.current,  // challengeId + solution + answer
-        hp: '',                     // honeypot — always blank for real users
+      const response = await apiClient.post('/api/auth/login', {
+        email: form.email,
+        password: form.password,
+        captchaData: captchaDataRef.current,
+        hp: '',
       });
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user',  JSON.stringify(data.user));
+
+      // apiClient already decrypts the response
+      const decryptedResponse = response.data;
+
+      if (!decryptedResponse.success) {
+        throw new Error(decryptedResponse.message);
+      }
+
+      localStorage.setItem('token', decryptedResponse.token);
+      localStorage.setItem('user', JSON.stringify(decryptedResponse.user));
       setIsAuth(true);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.message || 'Login failed. Please try again.');
       resetCaptcha();
     } finally {
       setLoading(false);
@@ -71,14 +80,13 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
   const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${dark
     ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/10'
     : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
-  }`;
+    }`;
 
   return (
     <div className={`relative min-h-screen flex transition-colors duration-300 ${dark ? 'bg-surface-950' : 'bg-slate-50'}`}>
       <AnimatedBackground intensity={0.6} />
       <div className="fixed inset-0 bg-grid opacity-20 pointer-events-none z-0" />
 
-      {/* ── Left decorative panel ── */}
       <div className="hidden lg:flex lg:w-[45%] relative items-center justify-center overflow-hidden z-10">
         <div
           className="absolute inset-0"
@@ -120,7 +128,7 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
           </p>
           <div className="mt-8 flex justify-center gap-2 flex-wrap">
             {[
-              { icon: FaGem,  text: 'Credits' },
+              { icon: FaGem, text: 'Credits' },
               { icon: FaLink, text: 'Referrals' },
               { icon: FaBolt, text: 'Attack Hub' },
             ].map((f, i) => (
@@ -135,19 +143,16 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
         </div>
       </div>
 
-      {/* ── Right panel (form) ── */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 relative z-10">
         <button
           onClick={toggleTheme}
-          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-            dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
-          }`}
+          className={`absolute top-4 right-4 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${dark ? 'bg-white/[0.06] text-yellow-400' : 'bg-black/[0.05] text-slate-600'
+            }`}
         >
           {dark ? <MdWbSunny size={17} /> : <MdNightlight size={17} />}
         </button>
 
         <div className="w-full max-w-sm">
-          {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <img src="/logo512.png" alt="Battle Destroyer" className="w-16 h-16 object-contain mx-auto mb-3" />
             <h1 className="text-2xl font-bold text-red-500 tracking-[0.12em]" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
@@ -173,7 +178,6 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
           )}
 
           <form onSubmit={submit} className="space-y-4">
-            {/* ── Honeypot — hidden from real users, bots fill it ── */}
             <input
               name="hp"
               type="text"
@@ -199,14 +203,13 @@ export default function Login({ toggleTheme, theme, setIsAuth }) {
               />
             </div>
 
-            {/* ── CAPTCHA SECTION ── */}
             <div>
               <label className={`bd-label flex items-center gap-1.5 mb-1.5 ${dark ? '' : 'text-slate-500'}`}>
                 <FaShieldAlt size={10} className="text-red-500/70" />
                 Human Verification
               </label>
 
-              <CaptchaWidget
+              <HCaptchaWidget
                 ref={captchaRef}
                 onVerify={handleVerify}
                 onExpire={resetCaptcha}

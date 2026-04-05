@@ -1,14 +1,15 @@
-// AdminPanel.js - COMPLETELY FIXED
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import CryptoJS from 'crypto-js';
 import {
     FaSearch, FaSignOutAlt, FaLock, FaExclamationTriangle,
     FaTrash, FaSave, FaCrown, FaGem, FaClock,
     FaUsers, FaPlus, FaKey, FaChartLine,
-    FaCopy, FaCheck, FaRedoAlt
+    FaCopy, FaCheck, FaRedoAlt, FaShieldAlt
 } from 'react-icons/fa';
 import { MdWbSunny, MdNightlight } from 'react-icons/md';
 import AnimatedBackground from '../components/AnimatedBackground';
+import HCaptchaWidget from '../components/HCaptchaWidget';
 
 // ── Local admin sub-components ──────────────────────────────────
 import Toast from '../admin/Toast';
@@ -20,34 +21,78 @@ import ResellerDetailModal from '../admin/ResellerDetailModal';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const ITEMS_PER_PAGE = 20;
+const ENCRYPTION_KEY = process.env.REACT_APP_ENCRYPTION_KEY || 'your-secret-key-2024-battle-destroyer';
 
 // ============================================
-// CREATE API CLIENT WITH INTERCEPTORS (OUTSIDE COMPONENT)
+// ENCRYPTION HELPERS
+// ============================================
+function encryptData(data) {
+    const jsonString = JSON.stringify({
+        ...data,
+        timestamp: Date.now()
+    });
+    return CryptoJS.AES.encrypt(jsonString, ENCRYPTION_KEY).toString();
+}
+
+function createHash(data) {
+    const jsonString = JSON.stringify(data);
+    return CryptoJS.SHA256(jsonString + ENCRYPTION_KEY).toString();
+}
+
+// ============================================
+// CREATE API CLIENT WITH INTERCEPTORS
 // ============================================
 const apiClient = axios.create({
     withCredentials: true
 });
 
-// Add request interceptor to automatically add token
+// Add request interceptor to automatically add token and encryption
 apiClient.interceptors.request.use(
-    (config) => {
+    async (config) => {
         const token = localStorage.getItem('adminToken');
         if (token) {
             config.headers['x-admin-token'] = token;
         }
+
+        // Add CSRF token for non-GET requests
+        if (config.method !== 'get' && !config.skipCsrf) {
+            try {
+                const csrfRes = await apiClient.get(`${API_URL}/api/csrf-token`, { skipCsrf: true });
+                config.headers['X-CSRF-Token'] = csrfRes.data.csrfToken;
+            } catch (err) {
+                console.error('Failed to get CSRF token:', err);
+            }
+        }
+
         return config;
     },
     (error) => Promise.reject(error)
 );
 
-// Add response interceptor to handle 401 errors
+
+// Add response interceptor to handle 401 errors and decrypt responses
 apiClient.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Check if response is encrypted
+        if (response.data && response.data.encrypted && response.data.hash) {
+            try {
+                const decrypted = decryptData(response.data.encrypted);
+                // Verify hash
+                const calculatedHash = createHash(decrypted);
+                if (calculatedHash !== response.data.hash) {
+                    throw new Error('Response integrity check failed');
+                }
+                response.data = decrypted;
+            } catch (err) {
+                console.error('Decryption error:', err);
+                throw new Error('Failed to decrypt response');
+            }
+        }
+        return response;
+    },
     (error) => {
         if (error.response?.status === 401) {
-            // Token expired or invalid
             localStorage.removeItem('adminToken');
-            // Only reload if we're not already on login page
             if (!window.location.pathname.includes('/login')) {
                 window.location.reload();
             }
@@ -55,6 +100,18 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+function decryptData(encryptedData) {
+    try {
+        const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        if (!decrypted) throw new Error('Decryption failed');
+        return JSON.parse(decrypted);
+    } catch (error) {
+        console.error('Decryption error:', error);
+        throw new Error('Invalid encrypted data');
+    }
+}
 
 export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const dark = theme !== 'light';
@@ -65,6 +122,11 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const [loginError, setLoginError] = useState('');
     const [loginLoading, setLoginLoading] = useState(false);
     const [token, setToken] = useState('');
+
+    // ── Captcha ────────────────────────────────────────────────
+    const [captchaReady, setCaptchaReady] = useState(false);
+    const captchaDataRef = useRef(null);
+    const captchaRef = useRef(null);
 
     // ── Data ───────────────────────────────────────────────────
     const [stats, setStats] = useState({
@@ -135,6 +197,18 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         expirationDays: 30
     });
 
+    // ── Captcha handlers ───────────────────────────────────────
+    const resetCaptcha = useCallback(() => {
+        captchaDataRef.current = null;
+        setCaptchaReady(false);
+        captchaRef.current?.reset();
+    }, []);
+
+    const handleCaptchaVerify = useCallback((captchaData) => {
+        captchaDataRef.current = captchaData;
+        setCaptchaReady(true);
+    }, []);
+
     // ── Helpers ────────────────────────────────────────────────
     const inputCls = `w-full rounded-xl px-3 py-2.5 text-sm border outline-none transition ${dark
         ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600'
@@ -146,11 +220,6 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         const id = Date.now();
         setToasts(prev => [...prev, { id, message, type }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
-    }, []);
-
-    const getCsrfToken = useCallback(async () => {
-        const res = await apiClient.get(`${API_URL}/api/csrf-token`);
-        return res.data.csrfToken;
     }, []);
 
     const logout = useCallback(async () => {
@@ -167,21 +236,38 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         toast('Logged out successfully');
     }, [toast]);
 
+    // ── Encrypted API request helper ───────────────────────────
+    const makeEncryptedRequest = useCallback(async (method, url, data = null, config = {}) => {
+        const payload = {
+            ...data,
+            timestamp: Date.now()
+        };
+
+        const encrypted = encryptData(payload);
+        const hash = createHash(payload);
+
+        const requestBody = { encrypted, hash };
+
+        const response = await apiClient[method](url, requestBody, config);
+        return response;
+    }, []);
+
     const extendApiUserExpiry = async (apiUserId, days) => {
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
-            const { data } = await apiClient.post(`${API_URL}/api/admin/api-users/${apiUserId}/extend`, {
-                days: days
-            }, {
-                headers: { 'X-CSRF-Token': csrfToken }
+            // Use plain axios post instead of makeEncryptedRequest
+            const response = await apiClient.post(`${API_URL}/api/admin/api-users/${apiUserId}/extend`, {
+                days: parseInt(days)
             });
+
+            const data = response.data;
 
             toast(`✅ Expiration extended by ${days} days! New expiry: ${new Date(data.expiresAt).toLocaleDateString()}`);
             setExtendExpiryModal(null);
             loadApiUsers(token, apiUsersSearch, apiUsersPage, apiUsersStatus);
             loadStats();
         } catch (err) {
+            console.error('Extend error:', err);
             toast(err.response?.data?.message || 'Failed to extend expiration', 'error');
         } finally {
             setModalLoading(false);
@@ -270,7 +356,6 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         setToken(savedToken);
         setIsLoggedIn(true);
 
-        // Verify token is valid
         apiClient.get(`${API_URL}/api/admin/session/check`)
             .then(async () => {
                 try {
@@ -291,17 +376,28 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             });
     }, [loadUsers, loadApiUsers, toast]);
 
-    // ── Login ──────────────────────────────────────────────────
+    // ── Login with encryption and captcha ──────────────────────
     const doLogin = async () => {
         setLoginError('');
         if (!adminSecret) { setLoginError('Admin secret is required'); return; }
+
+        if (!captchaDataRef.current) {
+            setLoginError('Please complete the human verification');
+            return;
+        }
+
         setLoginLoading(true);
         try {
-            const csrfRes = await apiClient.get(`${API_URL}/api/csrf-token`);
-            const { data } = await apiClient.post(`${API_URL}/api/admin/session`,
-                { secret: adminSecret },
-                { headers: { 'X-CSRF-Token': csrfRes.data.csrfToken } }
-            );
+            const response = await makeEncryptedRequest('post', `${API_URL}/api/admin/session`, {
+                secret: adminSecret,
+                captchaData: captchaDataRef.current
+            });
+
+            const data = response.data;
+
+            if (!data.token) {
+                throw new Error(data.message || 'Login failed');
+            }
 
             const newToken = data.token;
             setToken(newToken);
@@ -322,12 +418,13 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             toast(err.response?.data?.message || 'Login failed', 'error');
             localStorage.removeItem('adminToken');
             setToken('');
+            resetCaptcha();
         } finally {
             setLoginLoading(false);
         }
     };
 
-    // ── User CRUD ──────────────────────────────────────────────
+    // ── User CRUD with encryption ──────────────────────────────
     const openEditUser = (user) => {
         setUserForm({
             username: user.username, email: user.email,
@@ -341,40 +438,33 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const saveUser = async () => {
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
             const user = editUserModal;
-            const basicPayload = {
-                username: userForm.username, email: userForm.email,
-                credits: Number(userForm.credits),
-            };
-            if (userForm.password) basicPayload.password = userForm.password;
 
-            await apiClient.patch(`${API_URL}/api/admin/users/${user._id}`, basicPayload, {
-                headers: { 'X-CSRF-Token': csrfToken }
+            // Update basic user info
+            await apiClient.patch(`${API_URL}/api/admin/users/${user._id}`, {
+                username: userForm.username,
+                email: userForm.email,
+                credits: Number(userForm.credits),
+                ...(userForm.password && { password: userForm.password })
             });
 
+            // Handle Pro subscription changes
             if (userForm.hasPro && !user.isPro) {
-                const proPayload = {
+                await apiClient.post(`${API_URL}/api/admin/users/${user._id}/give-pro`, {
                     planType: userForm.proPlan === 'custom' ? 'custom' : userForm.proPlan,
                     ...(userForm.proPlan === 'custom' && { customDays: userForm.proDays })
-                };
-                await apiClient.post(`${API_URL}/api/admin/users/${user._id}/give-pro`, proPayload, {
-                    headers: { 'X-CSRF-Token': csrfToken }
                 });
                 toast(`✨ ${user.username} now has Pro access!`);
-            } else if (!userForm.hasPro && user.isPro) {
-                await apiClient.delete(`${API_URL}/api/admin/users/${user._id}/remove-pro`, {
-                    headers: { 'X-CSRF-Token': csrfToken }
-                });
+            }
+            else if (!userForm.hasPro && user.isPro) {
+                await apiClient.delete(`${API_URL}/api/admin/users/${user._id}/remove-pro`);
                 toast(`❌ Removed Pro from ${user.username}`);
-            } else if (userForm.hasPro && user.isPro) {
-                const proPayload = {
+            }
+            else if (userForm.hasPro && user.isPro) {
+                const endpoint = userForm.proAction === 'extend' ? 'extend-pro' : 'replace-pro';
+                await apiClient.post(`${API_URL}/api/admin/users/${user._id}/${endpoint}`, {
                     planType: userForm.proPlan === 'custom' ? 'custom' : userForm.proPlan,
                     ...(userForm.proPlan === 'custom' && { customDays: userForm.proDays })
-                };
-                const endpoint = userForm.proAction === 'extend' ? 'extend-pro' : 'replace-pro';
-                await apiClient.post(`${API_URL}/api/admin/users/${user._id}/${endpoint}`, proPayload, {
-                    headers: { 'X-CSRF-Token': csrfToken }
                 });
                 toast(userForm.proAction === 'extend' ? `➕ Extended Pro for ${user.username}!` : `🔄 Replaced Pro for ${user.username}!`);
             }
@@ -384,6 +474,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             loadUsers(token, searchQuery, usersPage, userFilter);
             loadStats();
         } catch (err) {
+            console.error('Save user error:', err);
             toast(err.response?.data?.message || 'Failed to update user', 'error');
         } finally {
             setModalLoading(false);
@@ -394,10 +485,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         if (!deleteConfirm) return;
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
-            await apiClient.delete(`${API_URL}/api/admin/users/${deleteConfirm._id}`, {
-                headers: { 'X-CSRF-Token': csrfToken }
-            });
+            await apiClient.delete(`${API_URL}/api/admin/users/${deleteConfirm._id}`);
             toast(`User ${deleteConfirm.username} deleted`);
             setDeleteConfirm(null);
             loadUsers(token, searchQuery, usersPage, userFilter);
@@ -409,13 +497,14 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         }
     };
 
-    // ── API Users CRUD ─────────────────────────────────────────
+    // ── API Users CRUD with encryption ─────────────────────────
     const openAddApiUser = () => {
         setApiUserForm({
             username: '',
             email: '',
             maxConcurrent: 2,
-            maxDuration: 300
+            maxDuration: 300,
+            expirationDays: 30
         });
         setAddApiUserModal(true);
     };
@@ -447,12 +536,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const updateApiUserStatus = async (apiUserId, newStatus) => {
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
-            await apiClient.patch(`${API_URL}/api/admin/api-users/${apiUserId}/limits`, {
-                status: newStatus
-            }, {
-                headers: { 'X-CSRF-Token': csrfToken }
-            });
+            await apiClient.patch(`${API_URL}/api/admin/api-users/${apiUserId}/limits`, { status: newStatus });
             toast(`API User status updated to ${newStatus}`);
             loadApiUsers(token, apiUsersSearch, apiUsersPage, apiUsersStatus);
         } catch (err) {
@@ -462,49 +546,55 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         }
     };
 
+    // In ConsoleAdminPanel.jsx, update the saveNewApiUser function
     const saveNewApiUser = async () => {
         if (!apiUserForm.username || !apiUserForm.email) {
             toast('Username and email are required', 'error');
             return;
         }
+
+        const sanitizedUsername = apiUserForm.username.trim().replace(/[^a-zA-Z0-9_.-]/g, '');
+
+        if (sanitizedUsername.length < 3) {
+            toast('Username must be at least 3 characters', 'error');
+            return;
+        }
+
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
-            const { data } = await apiClient.post(`${API_URL}/api/admin/api-users`, {
-                username: apiUserForm.username,
+            const response = await apiClient.post(`${API_URL}/api/admin/api-users`, {
+                username: sanitizedUsername,
                 email: apiUserForm.email,
                 maxConcurrent: apiUserForm.maxConcurrent,
                 maxDuration: apiUserForm.maxDuration,
-                expirationDays: apiUserForm.expirationDays || 30  // Add this
-            }, {
-                headers: { 'X-CSRF-Token': csrfToken }
+                expirationDays: apiUserForm.expirationDays || 30
             });
 
-            toast(`✅ API User ${data.user.username} created! Expires: ${new Date(data.user.expiresAt).toLocaleDateString()}`, 'success');
+            const data = response.data;
+
+            toast(`✅ API User ${data.user.username} created!`, 'success');
 
             setNewApiSecret(data.user.apiSecret);
             setSelectedApiUser(data.user);
             setRegenerateSecretModal(true);
-
             setAddApiUserModal(false);
             loadApiUsers(token, apiUsersSearch, apiUsersPage, apiUsersStatus);
             loadStats();
         } catch (err) {
+            console.error('Create API user error:', err);
             toast(err.response?.data?.message || 'Failed to create API user', 'error');
         } finally {
             setModalLoading(false);
         }
     };
 
+
     const saveEditApiUser = async () => {
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
             await apiClient.patch(`${API_URL}/api/admin/api-users/${editApiUserModal._id}/limits`, {
                 maxConcurrent: apiUserForm.maxConcurrent,
                 maxDuration: apiUserForm.maxDuration
-            }, {
-                headers: { 'X-CSRF-Token': csrfToken }
             });
 
             toast('API User updated successfully');
@@ -521,10 +611,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         if (!selectedApiUser) return;
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
-            const { data } = await apiClient.post(`${API_URL}/api/admin/api-users/${selectedApiUser._id}/regenerate-secret`, {}, {
-                headers: { 'X-CSRF-Token': csrfToken }
-            });
+            const { data } = await apiClient.post(`${API_URL}/api/admin/api-users/${selectedApiUser._id}/regenerate-secret`);
             setNewApiSecret(data.apiSecret);
             setRegenerateSecretModal(true);
             toast('API Secret regenerated!');
@@ -539,10 +626,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         if (!deleteApiUserConfirm) return;
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
-            await apiClient.delete(`${API_URL}/api/admin/api-users/${deleteApiUserConfirm._id}`, {
-                headers: { 'X-CSRF-Token': csrfToken }
-            });
+            await apiClient.delete(`${API_URL}/api/admin/api-users/${deleteApiUserConfirm._id}`);
             toast(`API User ${deleteApiUserConfirm.username} deleted`);
             setDeleteApiUserConfirm(null);
             loadApiUsers(token, apiUsersSearch, apiUsersPage, apiUsersStatus);
@@ -554,6 +638,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         }
     };
 
+
     const copyToClipboard = (text, field) => {
         navigator.clipboard.writeText(text);
         setCopiedField(field);
@@ -561,7 +646,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         toast(`Copied ${field} to clipboard!`);
     };
 
-    // ── Reseller CRUD ──────────────────────────────────────────
+    // ── Reseller CRUD with encryption ──────────────────────────
     const openAddReseller = () => {
         setResellerForm({ username: '', email: '', password: '', credits: 0, isBlocked: false });
         setAddResellerModal(true);
@@ -581,10 +666,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         }
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
-            await apiClient.post(`${API_URL}/api/admin/resellers`, resellerForm, {
-                headers: { 'X-CSRF-Token': csrfToken }
-            });
+            await apiClient.post(`${API_URL}/api/admin/resellers`, resellerForm);
             toast(`✅ Reseller ${resellerForm.username} created!`);
             setAddResellerModal(false);
             loadResellers(token, resellerSearch, 1);
@@ -599,15 +681,12 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
     const saveEditReseller = async () => {
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
             const payload = {
                 username: resellerForm.username, email: resellerForm.email,
                 credits: Number(resellerForm.credits), isBlocked: resellerForm.isBlocked
             };
             if (resellerForm.password) payload.password = resellerForm.password;
-            await apiClient.patch(`${API_URL}/api/admin/resellers/${editResellerModal._id}`, payload, {
-                headers: { 'X-CSRF-Token': csrfToken }
-            });
+            await apiClient.patch(`${API_URL}/api/admin/resellers/${editResellerModal._id}`, payload);
             toast('Reseller updated successfully');
             setEditResellerModal(null);
             loadResellers(token, resellerSearch, resellersPage);
@@ -622,10 +701,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         if (!deleteResellerConfirm) return;
         setModalLoading(true);
         try {
-            const csrfToken = await getCsrfToken();
-            await apiClient.delete(`${API_URL}/api/admin/resellers/${deleteResellerConfirm._id}`, {
-                headers: { 'X-CSRF-Token': csrfToken }
-            });
+            await apiClient.delete(`${API_URL}/api/admin/resellers/${deleteResellerConfirm._id}`);
             toast(`Reseller ${deleteResellerConfirm.username} deleted`);
             setDeleteResellerConfirm(null);
             loadResellers(token, resellerSearch, resellersPage);
@@ -712,7 +788,7 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
         </div>
     );
 
-    // ── Login screen ───────────────────────────────────────────
+    // ── Login screen with captcha ──────────────────────────────
     if (!isLoggedIn) {
         return (
             <div className={`min-h-screen flex items-center justify-center px-4 relative ${dark ? 'bg-surface-950' : 'bg-slate-50'}`}>
@@ -734,11 +810,13 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                     </div>
                     <h1 className={`text-2xl font-black mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>ADMIN LOGIN</h1>
                     <p className={`text-xs mb-6 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Sign in with your admin secret</p>
+
                     {loginError && (
                         <div className="flex items-center gap-2 rounded-xl p-3 border border-red-500/25 bg-red-500/8 text-red-400 text-sm mb-4">
                             <FaExclamationTriangle size={12} /> {loginError}
                         </div>
                     )}
+
                     <div className="space-y-4">
                         <div>
                             <label className={labelCls}>Admin Secret</label>
@@ -746,8 +824,24 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
                                 value={adminSecret} onChange={e => setAdminSecret(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && doLogin()} />
                         </div>
-                        <button onClick={doLogin} disabled={loginLoading}
-                            className="w-full py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-500 transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
+
+                        {/* CAPTCHA SECTION */}
+                        <div>
+                            <label className={`bd-label flex items-center gap-1.5 mb-1.5 ${dark ? '' : 'text-slate-500'}`}>
+                                <FaShieldAlt size={10} className="text-red-500/70" />
+                                Human Verification
+                            </label>
+                            <HCaptchaWidget
+                                ref={captchaRef}
+                                onVerify={handleCaptchaVerify}
+                                onExpire={resetCaptcha}
+                                onError={resetCaptcha}
+                                theme={theme}
+                            />
+                        </div>
+
+                        <button onClick={doLogin} disabled={loginLoading || !captchaReady}
+                            className="w-full py-3 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-500 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2">
                             {loginLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaLock size={12} />}
                             {loginLoading ? 'SIGNING IN...' : 'SIGN IN'}
                         </button>
@@ -1235,13 +1329,30 @@ export default function ConsoleAdminPanel({ toggleTheme, theme }) {
             {addApiUserModal && (
                 <Modal title="CREATE API USER" onClose={() => setAddApiUserModal(false)} dark={dark} size="md">
                     <div className="space-y-4">
+                        {/* In the Add API User modal, update the username field */}
                         <div>
                             <label className={labelCls}>Username *</label>
-                            <input className={inputCls}
+                            <input
+                                className={inputCls}
                                 value={apiUserForm.username}
-                                onChange={e => setApiUserForm(p => ({ ...p, username: e.target.value }))}
-                                placeholder="api_user_name" />
-                            <p className="text-[10px] mt-1 text-slate-500">3-30 chars, letters, numbers, underscore only</p>
+                                onChange={e => {
+                                    const rawValue = e.target.value;
+                                    // Show live validation
+                                    setApiUserForm(p => ({ ...p, username: rawValue }));
+                                }}
+                                placeholder="api_user_name"
+                            />
+                            {apiUserForm.username && (
+                                <p className={`text-[10px] mt-1 ${apiUserForm.username.replace(/[^a-zA-Z0-9_.-]/g, '').length >= 3
+                                    ? 'text-green-500'
+                                    : 'text-red-500'
+                                    }`}>
+                                    {apiUserForm.username.replace(/[^a-zA-Z0-9_.-]/g, '').length >= 3
+                                        ? '✓ Username is valid'
+                                        : 'Username must be 3+ chars (letters, numbers, _, ., - only)'}
+                                </p>
+                            )}
+                            <p className="text-[10px] mt-1 text-slate-500">Allowed: letters, numbers, underscores, dots, hyphens</p>
                         </div>
                         <div>
                             <label className={labelCls}>Email *</label>
