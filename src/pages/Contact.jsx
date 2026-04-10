@@ -366,7 +366,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                                 PRO FEATURES
                             </p>
                             <p className={`text-xs leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                Pro users get <span className="font-semibold">30 attacks per day</span> with{' '}
+                                Pro users get <span className="font-semibold">Unlitmited attacks per day</span> with{' '}
                                 <span className="font-semibold">300 seconds max duration</span>. 
                                 Upgrade from your dashboard after logging in.
                             </p>
