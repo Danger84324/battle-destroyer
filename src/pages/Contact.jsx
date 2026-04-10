@@ -386,7 +386,7 @@ export default function Contact({ toggleTheme, theme, setIsAuth }) {
                             <div className="flex items-center gap-2">
                                 <FaBolt className="text-blue-400" size={12} />
                                 <span className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                    30 attacks per day
+                                     attacks per day
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
