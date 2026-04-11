@@ -159,7 +159,7 @@ export default function LiveMonitorTab({ dark, token, showToast }) {
         if (autoRefresh) {
             refreshIntervalRef.current = setInterval(() => {
                 fetchAttacks();
-            }, 30000);
+            }, 10000);
         }
         
         return () => {
