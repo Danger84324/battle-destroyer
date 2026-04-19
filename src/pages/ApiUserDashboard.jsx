@@ -14,12 +14,11 @@ import apiUserApiClient from '../utils/apiUserApiClient';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // IP Whitelist Management Component
-// Simplified IP Whitelist Management Component - Only Add/Update & Remove
+// Ultra-minimal - Just input and button
 const IpWhitelistManager = ({ dark, token, onToast }) => {
     const [whitelistedIp, setWhitelistedIp] = useState('');
     const [ipInput, setIpInput] = useState('');
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(null);
 
     const fetchStatus = useCallback(async () => {
         try {
@@ -38,21 +37,12 @@ const IpWhitelistManager = ({ dark, token, onToast }) => {
         fetchStatus();
     }, [fetchStatus]);
 
-    const showMessage = (msg, isError = false) => {
-        setMessage({ text: msg, isError });
-        if (onToast) onToast(msg, isError ? 'error' : 'success');
-        setTimeout(() => setMessage(null), 3000);
-    };
-
-    const handleAddUpdate = async () => {
-        if (!ipInput.trim()) {
-            showMessage('Please enter an IP address', true);
-            return;
-        }
+    const handleSetIp = async () => {
+        if (!ipInput.trim()) return;
         
         const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
         if (!ipRegex.test(ipInput)) {
-            showMessage('Invalid IP address format', true);
+            if (onToast) onToast('Invalid IP address', 'error');
             return;
         }
         
@@ -64,26 +54,10 @@ const IpWhitelistManager = ({ dark, token, onToast }) => {
             );
             setWhitelistedIp(ipInput);
             setIpInput('');
-            showMessage(`✅ IP whitelist set to: ${ipInput}`);
+            if (onToast) onToast(`✅ IP whitelist set to: ${ipInput}`, 'success');
             fetchStatus();
         } catch (err) {
-            showMessage(`❌ ${err.response?.data?.error || 'Failed to set IP'}`, true);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleRemove = async () => {
-        setLoading(true);
-        try {
-            await apiUserApiClient.delete(`${API_URL}/api/ip-whitelist/remove`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setWhitelistedIp('');
-            showMessage('✅ IP whitelist removed');
-            fetchStatus();
-        } catch (err) {
-            showMessage(`❌ ${err.response?.data?.error || 'Failed to remove'}`, true);
+            if (onToast) onToast(err.response?.data?.error || 'Failed to set IP', 'error');
         } finally {
             setLoading(false);
         }
@@ -94,51 +68,30 @@ const IpWhitelistManager = ({ dark, token, onToast }) => {
             <div className="flex items-center gap-2 mb-4">
                 <FaShieldAlt className="text-blue-500" size={18} />
                 <h3 className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>IP Whitelist</h3>
-                {whitelistedIp && <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">Active</span>}
+                {whitelistedIp && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                        {whitelistedIp}
+                    </span>
+                )}
             </div>
 
-            {message && (
-                <div className={`mb-4 p-3 rounded-lg text-sm ${message.isError ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                    {message.text}
-                </div>
-            )}
-
-            <div className="space-y-3">
-                {whitelistedIp && (
-                    <div className="p-2 rounded-lg bg-green-500/10 text-center">
-                        <p className="text-xs">Current Whitelist IP</p>
-                        <code className="text-sm font-mono">{whitelistedIp}</code>
-                    </div>
-                )}
-
-                <div className="flex gap-2">
-                    <input
-                        type="text"
-                        value={ipInput}
-                        onChange={(e) => setIpInput(e.target.value)}
-                        placeholder="Enter IP address"
-                        className={`flex-1 px-3 py-2 rounded-lg text-sm ${
-                            dark ? 'bg-surface-900 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                        } border focus:outline-none focus:ring-1 focus:ring-cyan-500`}
-                    />
-                    <button
-                        onClick={handleAddUpdate}
-                        disabled={loading || !ipInput.trim()}
-                        className="px-4 py-2 rounded-lg bg-cyan-600 text-white text-sm font-semibold hover:bg-cyan-500 disabled:opacity-50"
-                    >
-                        {whitelistedIp ? 'Update' : 'Add'}
-                    </button>
-                </div>
-
-                {whitelistedIp && (
-                    <button
-                        onClick={handleRemove}
-                        disabled={loading}
-                        className="w-full px-4 py-2 rounded-lg bg-red-500/20 text-red-400 text-sm font-semibold hover:bg-red-500/30"
-                    >
-                        Remove
-                    </button>
-                )}
+            <div className="flex gap-2">
+                <input
+                    type="text"
+                    value={ipInput}
+                    onChange={(e) => setIpInput(e.target.value)}
+                    placeholder="Enter IP address"
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm ${
+                        dark ? 'bg-surface-900 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    } border focus:outline-none focus:ring-1 focus:ring-cyan-500`}
+                />
+                <button
+                    onClick={handleSetIp}
+                    disabled={loading || !ipInput.trim()}
+                    className="px-4 py-2 rounded-lg bg-cyan-600 text-white text-sm font-semibold hover:bg-cyan-500 disabled:opacity-50"
+                >
+                    {loading ? '...' : (whitelistedIp ? 'Update' : 'Set')}
+                </button>
             </div>
         </div>
     );
