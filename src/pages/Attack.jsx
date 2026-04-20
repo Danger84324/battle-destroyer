@@ -6,11 +6,11 @@ import {
     FaUsers, FaCrown, FaWrench, FaCalendarAlt, FaFire
 } from 'react-icons/fa';
 import { MdRadar } from 'react-icons/md';
-import Navbar          from '../components/Navbar';
-import Footer          from '../components/Footer';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import AnimatedBackground from '../components/AnimatedBackground';
-import HCaptchaWidget   from '../components/HCaptchaWidget';
-import api             from '../utils/apiClient';
+import HCaptchaWidget from '../components/HCaptchaWidget';
+import api from '../utils/apiClient';
 
 /* ─────────────────────────────────────────────────────────────
    CaptchaSection - Only shown for non-Pro users
@@ -20,51 +20,50 @@ function CaptchaSection({ dark, captchaReady, captchaRef, handleVerify, resetCap
     const timerRef = useRef(null);
 
     useEffect(() => {
-        if (!captchaReady || !issuedAt) { 
-            clearInterval(timerRef.current); 
-            setTimeLeft(0); 
-            return; 
+        if (!captchaReady || !issuedAt) {
+            clearInterval(timerRef.current);
+            setTimeLeft(0);
+            return;
         }
-        
+
         const tick = () => {
             const remaining = Math.max(0, Math.floor((TOKEN_MAX_AGE_MS - (Date.now() - issuedAt)) / 1000));
             setTimeLeft(remaining);
-            if (remaining <= 0) { 
-                clearInterval(timerRef.current); 
-                resetCaptcha(); 
+            if (remaining <= 0) {
+                clearInterval(timerRef.current);
+                resetCaptcha();
             }
         };
-        
+
         tick();
         timerRef.current = setInterval(tick, 1000);
-        
+
         return () => clearInterval(timerRef.current);
     }, [captchaReady, issuedAt, TOKEN_MAX_AGE_MS, resetCaptcha]);
 
     if (captchaReady) {
         const mins = Math.floor(timeLeft / 60);
         const secs = timeLeft % 60;
-        const pct  = Math.round((timeLeft / (TOKEN_MAX_AGE_MS / 1000)) * 100);
+        const pct = Math.round((timeLeft / (TOKEN_MAX_AGE_MS / 1000)) * 100);
         const expiring = timeLeft < 60;
-        
+
         return (
             <div>
-                <div className={`w-full py-3 px-4 rounded-xl border flex items-center gap-2.5 ${
-                    dark ? 'border-green-500/30 bg-green-500/[0.06]' : 'border-green-400/40 bg-green-50'
-                }`}>
+                <div className={`w-full py-3 px-4 rounded-xl border flex items-center gap-2.5 ${dark ? 'border-green-500/30 bg-green-500/[0.06]' : 'border-green-400/40 bg-green-50'
+                    }`}>
                     <FaCheckCircle className="text-green-500 shrink-0" size={14} />
                     <span className="text-green-500 text-sm font-bold tracking-widest"
-                          style={{ fontFamily: "'Rajdhani', sans-serif" }}>
+                        style={{ fontFamily: "'Rajdhani', sans-serif" }}>
                         VERIFIED — READY TO LAUNCH
                     </span>
                     <span className={`ml-auto text-xs font-bold tabular-nums ${expiring ? 'text-red-400' : 'text-amber-400'}`}
-                          style={{ fontFamily: "'Rajdhani', sans-serif" }}>
+                        style={{ fontFamily: "'Rajdhani', sans-serif" }}>
                         {mins}:{String(secs).padStart(2, '0')}
                     </span>
                 </div>
                 <div className={`h-0.5 rounded-full mt-1.5 overflow-hidden ${dark ? 'bg-white/[0.06]' : 'bg-slate-100'}`}>
                     <div className="h-full rounded-full transition-all duration-1000"
-                         style={{ width: `${pct}%`, background: expiring ? '#ef4444' : '#f59e0b' }} />
+                        style={{ width: `${pct}%`, background: expiring ? '#ef4444' : '#f59e0b' }} />
                 </div>
                 <p className={`text-xs mt-1.5 flex items-center gap-1.5 ${dark ? 'text-slate-600' : 'text-slate-400'}`}>
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
@@ -90,33 +89,33 @@ function CaptchaSection({ dark, captchaReady, captchaRef, handleVerify, resetCap
    Main Attack page
 ───────────────────────────────────────────────────────────── */
 export default function Attack({ toggleTheme, theme, setIsAuth }) {
-    const [user, setUser]                       = useState(null);
-    const [form, setForm]                       = useState({ ip: '', port: '', duration: '' });
-    const [errors, setErrors]                   = useState({});
-    const [launching, setLaunching]             = useState(false);
-    const [launched, setLaunched]               = useState(false);
-    const [launchError, setLaunchError]         = useState('');
-    const [attackStatus, setAttackStatus]       = useState(null);
+    const [user, setUser] = useState(null);
+    const [form, setForm] = useState({ ip: '', port: '', duration: '' });
+    const [errors, setErrors] = useState({});
+    const [launching, setLaunching] = useState(false);
+    const [launched, setLaunched] = useState(false);
+    const [launchError, setLaunchError] = useState('');
+    const [attackStatus, setAttackStatus] = useState(null);
     const [attackCompleted, setAttackCompleted] = useState(false);
-    const [timeLeft, setTimeLeft]               = useState(0);
-    const [attackHistory, setAttackHistory]     = useState([]);
-    const [captchaReady, setCaptchaReady]       = useState(false);
-    const [cooldown, setCooldown]               = useState(0);
-    const [stats, setStats]                     = useState({ totalAttacks: 0, totalUsers: 0 });
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [attackHistory, setAttackHistory] = useState([]);
+    const [captchaReady, setCaptchaReady] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
+    const [stats, setStats] = useState({ totalAttacks: 0, totalUsers: 0 });
 
-    const cooldownTimerRef    = useRef(null);
-    const captchaDataRef      = useRef(null);
-    const captchaIssuedRef    = useRef(null);
-    const expiryTimerRef      = useRef(null);
-    const captchaRef          = useRef(null);
-    const countdownRef        = useRef(null);
-    const statusPollRef       = useRef(null);
+    const cooldownTimerRef = useRef(null);
+    const captchaDataRef = useRef(null);
+    const captchaIssuedRef = useRef(null);
+    const expiryTimerRef = useRef(null);
+    const captchaRef = useRef(null);
+    const countdownRef = useRef(null);
+    const statusPollRef = useRef(null);
     const runningHistoryIdRef = useRef(null);
 
     const TOKEN_MAX_AGE_MS = 270_000;
-    const MAINTENANCE      = false;
-    const navigate         = useNavigate();
-    const dark             = theme !== 'light';
+    const MAINTENANCE = false;
+    const navigate = useNavigate();
+    const dark = theme !== 'light';
 
     const isProActive = user?.subscription?.type === 'pro' &&
         user?.subscription?.expiresAt &&
@@ -131,7 +130,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     /* ── History helpers ── */
     useEffect(() => {
         const saved = localStorage.getItem('attackHistory');
-        if (saved) { try { setAttackHistory(JSON.parse(saved)); } catch {} }
+        if (saved) { try { setAttackHistory(JSON.parse(saved)); } catch { } }
     }, []);
 
     useEffect(() => () => clearInterval(cooldownTimerRef.current), []);
@@ -142,7 +141,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     }, []);
 
     const addToHistory = useCallback((attack) => {
-        const id    = Date.now();
+        const id = Date.now();
         runningHistoryIdRef.current = id;
         const entry = { id, ...attack, status: 'running', timestamp: new Date().toISOString(), completedAt: null };
         setAttackHistory(prev => {
@@ -172,7 +171,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     const startCountdown = useCallback((startedAt, duration) => {
         if (countdownRef.current) clearInterval(countdownRef.current);
         const tick = () => {
-            const elapsed   = (Date.now() - new Date(startedAt).getTime()) / 1000;
+            const elapsed = (Date.now() - new Date(startedAt).getTime()) / 1000;
             const remaining = Math.max(0, Math.floor(duration - elapsed));
             setTimeLeft(remaining);
             if (remaining <= 0) {
@@ -201,20 +200,20 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                     markRunningComplete();
                     setTimeout(() => setAttackCompleted(false), 5000);
                 }
-            } catch {}
+            } catch { }
         }, 10000);
     }, [markRunningComplete]);
 
     const checkAttackStatus = useCallback(async () => {
         try {
-            const res  = await api.get('/api/panel/attack-status');
+            const res = await api.get('/api/panel/attack-status');
             const data = res.data?.data;
             if (data?.status === 'running') {
                 setAttackStatus(data);
                 startCountdown(data.startedAt, data.duration);
                 startStatusPolling();
             }
-        } catch {}
+        } catch { }
     }, [startCountdown, startStatusPolling]);
 
     /* ── Bootstrap ── */
@@ -256,14 +255,14 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             try {
                 const res = await api.get('/api/panel/stats');
                 setStats(res.data);
-            } catch {}
+            } catch { }
         };
         fetchStats();
     }, []);
 
     /* ── Captcha Handlers (for non-Pro users only) ── */
     const resetCaptcha = useCallback(() => {
-        captchaDataRef.current  = null;
+        captchaDataRef.current = null;
         captchaIssuedRef.current = null;
         setCaptchaReady(false);
         clearTimeout(expiryTimerRef.current);
@@ -271,7 +270,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     }, []);
 
     const handleVerify = useCallback((captchaData) => {
-        captchaDataRef.current  = captchaData;
+        captchaDataRef.current = captchaData;
         captchaIssuedRef.current = Date.now();
         setCaptchaReady(true);
         clearTimeout(expiryTimerRef.current);
@@ -289,7 +288,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
 
     const validate = () => {
         const errs = {};
-        const MAX  = isProActive ? 300 : 60;
+        const MAX = isProActive ? 300 : 60;
 
         if (!form.ip)
             errs.ip = 'IP address is required';
@@ -297,14 +296,14 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             errs.ip = 'Enter a valid IP address';
 
         const port = parseInt(form.port);
-        if (!form.port)         errs.port = 'Port is required';
+        if (!form.port) errs.port = 'Port is required';
         else if (isNaN(port) || port < 1 || port > 65535) errs.port = 'Port must be 1–65535';
-        else if (BLOCKED_PORTS.has(port))                  errs.port = `Port ${port} is blocked`;
+        else if (BLOCKED_PORTS.has(port)) errs.port = `Port ${port} is blocked`;
 
         const dur = parseInt(form.duration);
-        if (!form.duration)        errs.duration = 'Duration is required';
+        if (!form.duration) errs.duration = 'Duration is required';
         else if (isNaN(dur) || dur < 1) errs.duration = 'Duration must be at least 1 second';
-        else if (dur > MAX)             errs.duration = `Max duration is ${MAX}s${!isProActive ? ' (Pro: 300s)' : ''}`;
+        else if (dur > MAX) errs.duration = `Max duration is ${MAX}s${!isProActive ? ' (Pro: 300s)' : ''}`;
 
         return errs;
     };
@@ -317,26 +316,26 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
 
         // Validate form first
         const errs = validate();
-        if (Object.keys(errs).length > 0) { 
-            setErrors(errs); 
-            return; 
+        if (Object.keys(errs).length > 0) {
+            setErrors(errs);
+            return;
         }
-        
-        if (attackStatus?.status === 'running') { 
-            setLaunchError('An attack is already running.'); 
-            return; 
+
+        if (attackStatus?.status === 'running') {
+            setLaunchError('An attack is already running.');
+            return;
         }
 
         // Only check captcha for non-Pro users
         if (!isProActive) {
             const captchaData = captchaDataRef.current;
-            const issuedAt    = captchaIssuedRef.current;
+            const issuedAt = captchaIssuedRef.current;
 
-            if (!captchaData) { 
-                setLaunchError('Please complete the human verification first.'); 
-                return; 
+            if (!captchaData) {
+                setLaunchError('Please complete the human verification first.');
+                return;
             }
-            
+
             if (!issuedAt || Date.now() - issuedAt > TOKEN_MAX_AGE_MS) {
                 resetCaptcha();
                 setLaunchError('Verification expired. Please complete it again.');
@@ -345,20 +344,20 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         }
 
         setLaunching(true);
-        
+
         try {
             // Prepare request data - only include captchaData for non-Pro users
             const requestData = {
-                ip: form.ip, 
-                port: form.port, 
+                ip: form.ip,
+                port: form.port,
                 duration: form.duration
             };
-            
+
             // Only add captchaData for non-Pro users
             if (!isProActive) {
                 requestData.captchaData = captchaDataRef.current;
             }
-            
+
             const res = await api.post('/api/panel/attack', requestData, {
                 _extra: { clientVersion: '1.0.0' }
             });
@@ -371,10 +370,10 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             }
 
             const status = {
-                status:    'running',
-                ip:        form.ip,
-                port:      parseInt(form.port),
-                duration:  parseInt(form.duration),
+                status: 'running',
+                ip: form.ip,
+                port: parseInt(form.port),
+                duration: parseInt(form.duration),
                 startedAt: data.attack.startedAt,
             };
             addToHistory(status);
@@ -383,12 +382,12 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             startCountdown(data.attack.startedAt, parseInt(form.duration));
             startStatusPolling();
             setTimeout(() => setLaunched(false), 3000);
-            
-            // Reset captcha only for non-Pro users
+
+            // ONLY reset captcha for non-Pro users
             if (!isProActive) {
                 resetCaptcha();
             }
-            
+
             setForm({ ip: '', port: '', duration: '' });
 
             // Refresh stats
@@ -396,8 +395,8 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             setStats(statsRes.data);
 
         } catch (err) {
-            const decoded      = err.decrypted ?? {};
-            let errorMessage   = decoded.message || 'Launch failed. Please try again.';
+            const decoded = err.decrypted ?? {};
+            let errorMessage = decoded.message || 'Launch failed. Please try again.';
             const cooldownTime = decoded.cooldown ?? 5;
 
             if (decoded.remainingAttacks !== undefined) {
@@ -420,8 +419,8 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             } else {
                 setLaunchError(errorMessage);
             }
-            
-            // Only reset captcha for non-Pro users
+
+            // ONLY reset captcha for non-Pro users
             if (!isProActive) {
                 resetCaptcha();
             }
@@ -432,7 +431,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
 
     /* ── Derived ── */
     const MAX_DURATION = isProActive ? 300 : 60;
-    const progressPct  = attackStatus
+    const progressPct = attackStatus
         ? Math.min(100, Math.round(((attackStatus.duration - timeLeft) / attackStatus.duration) * 100))
         : 0;
 
@@ -448,7 +447,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     );
 
     /* ── Styles ── */
-    const cardCls  = dark ? 'bg-surface-800/70 border-white/[0.07] backdrop-blur-xl' : 'bg-white border-slate-200 shadow-sm';
+    const cardCls = dark ? 'bg-surface-800/70 border-white/[0.07] backdrop-blur-xl' : 'bg-white border-slate-200 shadow-sm';
     const inputCls = `w-full rounded-xl px-4 py-3 text-sm border outline-none transition font-mono ${dark
         ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/10'
         : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'}`;
@@ -605,7 +604,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                     <div>
                                         <label className="bd-label">Port</label>
                                         <input name="port" type="number" value={form.port} onChange={handle} placeholder="e.g. 8080" min="1" max="65535"
-                                            className={`${inputCls} ${errors.port ? 'border-red-500/60' : ''}`}/>
+                                            className={`${inputCls} ${errors.port ? 'border-red-500/60' : ''}`} />
                                         {errors.port && <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1.5"><FaExclamationTriangle size={11} />{errors.port}</p>}
                                     </div>
                                     <div>
@@ -661,12 +660,11 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
 
                                 {/* Pro benefit message */}
                                 {isProActive && (
-                                    <div className={`w-full py-3 px-4 rounded-xl border flex items-center gap-2.5 ${
-                                        dark ? 'border-yellow-500/30 bg-yellow-500/[0.06]' : 'border-yellow-400/40 bg-yellow-50'
-                                    }`}>
+                                    <div className={`w-full py-3 px-4 rounded-xl border flex items-center gap-2.5 ${dark ? 'border-yellow-500/30 bg-yellow-500/[0.06]' : 'border-yellow-400/40 bg-yellow-50'
+                                        }`}>
                                         <FaCrown className="text-yellow-500 shrink-0" size={14} />
                                         <span className="text-yellow-600 dark:text-yellow-400 text-sm font-bold tracking-widest"
-                                              style={{ fontFamily: "'Rajdhani', sans-serif" }}>
+                                            style={{ fontFamily: "'Rajdhani', sans-serif" }}>
                                             ⚡ PRO BENEFIT — NO CAPTCHA REQUIRED
                                         </span>
                                     </div>
@@ -675,19 +673,18 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                 {/* Launch Button */}
                                 <button onClick={launch}
                                     disabled={MAINTENANCE || launching || !canAttack || (attackStatus?.status === 'running') || cooldown > 0 || (!isProActive && !captchaReady)}
-                                    className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${
-                                        MAINTENANCE ? (dark ? 'bg-yellow-500/10 text-yellow-500/60 cursor-not-allowed' : 'bg-yellow-50 text-yellow-400 cursor-not-allowed')
+                                    className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${MAINTENANCE ? (dark ? 'bg-yellow-500/10 text-yellow-500/60 cursor-not-allowed' : 'bg-yellow-50 text-yellow-400 cursor-not-allowed')
                                         : !canAttack || (attackStatus?.status === 'running') || cooldown > 0 || (!isProActive && !captchaReady) ? (dark ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed')
-                                        : launching ? 'bg-red-700 text-white cursor-wait'
-                                        : 'bg-red-600 hover:bg-red-500 text-white'
-                                    }`}>
+                                            : launching ? 'bg-red-700 text-white cursor-wait'
+                                                : 'bg-red-600 hover:bg-red-500 text-white'
+                                        }`}>
                                     {MAINTENANCE ? <><FaWrench size={15} /> SERVER UNDER MAINTENANCE</>
-                                    : cooldown > 0 ? <>WAIT {cooldown}s</>
-                                    : launching ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />LAUNCHING...</>
-                                    : !canAttack ? <>{isProActive ? <FaBan size={15} /> : <FaGem size={15} />} {isProActive ? 'SERVICE UNAVAILABLE' : 'INSUFFICIENT CREDITS'}</>
-                                    : !isProActive && !captchaReady ? <><FaLock size={15} /> COMPLETE VERIFICATION</>
-                                    : attackStatus?.status === 'running' ? <><FaRocket size={15} /> ATTACK RUNNING</>
-                                    : <><FaRocket size={15} /> LAUNCH ATTACK</>}
+                                        : cooldown > 0 ? <>WAIT {cooldown}s</>
+                                            : launching ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />LAUNCHING...</>
+                                                : !canAttack ? <>{isProActive ? <FaBan size={15} /> : <FaGem size={15} />} {isProActive ? 'SERVICE UNAVAILABLE' : 'INSUFFICIENT CREDITS'}</>
+                                                    : !isProActive && !captchaReady ? <><FaLock size={15} /> COMPLETE VERIFICATION</>
+                                                        : attackStatus?.status === 'running' ? <><FaRocket size={15} /> ATTACK RUNNING</>
+                                                            : <><FaRocket size={15} /> LAUNCH ATTACK</>}
                                 </button>
                             </div>
                         </div>
@@ -726,7 +723,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                     </div>
                                     <div className={`w-full h-1.5 rounded-full overflow-hidden mb-2 ${dark ? 'bg-white/[0.08]' : 'bg-red-100'}`}>
                                         <div className="h-full rounded-full transition-all duration-1000 progress-bar-glow"
-                                             style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #dc2626, #ef4444)' }} />
+                                            style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #dc2626, #ef4444)' }} />
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-400'}`}>{attackStatus.duration}s total</span>
@@ -747,14 +744,14 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                             ) : (
                                 <div className="space-y-1.5">
                                     {attackHistory.map((attack) => {
-                                        const diffMs    = Date.now() - new Date(attack.timestamp).getTime();
-                                        const diffMins  = Math.floor(diffMs / 60000);
+                                        const diffMs = Date.now() - new Date(attack.timestamp).getTime();
+                                        const diffMins = Math.floor(diffMs / 60000);
                                         const diffHours = Math.floor(diffMs / 3600000);
-                                        const diffDays  = Math.floor(diffMs / 86400000);
-                                        const timeAgo   = diffMins < 1 ? 'Just now'
-                                            : diffMins < 60  ? `${diffMins}m ago`
-                                            : diffHours < 24 ? `${diffHours}h ago`
-                                            : `${diffDays}d ago`;
+                                        const diffDays = Math.floor(diffMs / 86400000);
+                                        const timeAgo = diffMins < 1 ? 'Just now'
+                                            : diffMins < 60 ? `${diffMins}m ago`
+                                                : diffHours < 24 ? `${diffHours}h ago`
+                                                    : `${diffDays}d ago`;
                                         const isCompleted = attack.status === 'completed'
                                             || (attack.status === 'running' && attack.id !== runningHistoryIdRef.current);
 
