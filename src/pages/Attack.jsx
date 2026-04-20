@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     FaExclamationTriangle, FaCheckCircle, FaTrash, FaHistory,
     FaGem, FaBullseye, FaBan, FaLock, FaRocket,
-    FaUsers, FaCrown, FaWrench, FaCalendarAlt, FaFire
+    FaUsers, FaCrown, FaWrench, FaFire
 } from 'react-icons/fa';
 import { MdRadar } from 'react-icons/md';
 import Navbar from '../components/Navbar';
@@ -73,7 +73,6 @@ function CaptchaSection({ dark, captchaReady, captchaRef, handleVerify, resetCap
         );
     }
 
-    // Show hCaptcha widget when not verified
     return (
         <HCaptchaWidget
             ref={captchaRef}
@@ -102,8 +101,6 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     const [captchaReady, setCaptchaReady] = useState(false);
     const [cooldown, setCooldown] = useState(0);
     const [stats, setStats] = useState({ totalAttacks: 0, totalUsers: 0 });
-    // Add a flag to track if component is mounted
-    const isMounted = useRef(true);
 
     const cooldownTimerRef = useRef(null);
     const captchaDataRef = useRef(null);
@@ -119,12 +116,8 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     const navigate = useNavigate();
     const dark = theme !== 'light';
 
-    // FIX: Use useMemo to prevent unnecessary recalculations
-    const isProActive = useMemo(() => {
-        return user?.subscription?.type === 'pro' &&
-            user?.subscription?.expiresAt &&
-            new Date(user.subscription.expiresAt) > new Date();
-    }, [user?.subscription?.type, user?.subscription?.expiresAt]);
+    // SIMPLE Pro check - use the isPro flag directly from backend
+    const isProActive = user?.isPro === true;
 
     const daysLeft = useMemo(() => {
         return isProActive && user?.subscription?.expiresAt
@@ -140,13 +133,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         if (saved) { try { setAttackHistory(JSON.parse(saved)); } catch { } }
     }, []);
 
-    useEffect(() => {
-        isMounted.current = true;
-        return () => {
-            isMounted.current = false;
-            clearInterval(cooldownTimerRef.current);
-        };
-    }, []);
+    useEffect(() => () => clearInterval(cooldownTimerRef.current), []);
 
     const saveAttackHistory = useCallback((h) => {
         localStorage.setItem('attackHistory', JSON.stringify(h));
@@ -234,15 +221,11 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         const fetchUser = async () => {
             try {
                 const res = await api.get('/api/panel/me');
-                if (isMounted.current) {
-                    setUser(res.data);
-                    localStorage.setItem('user', JSON.stringify(res.data));
-                }
+                setUser(res.data);
+                localStorage.setItem('user', JSON.stringify(res.data));
             } catch {
-                if (isMounted.current) {
-                    localStorage.clear();
-                    navigate('/login');
-                }
+                localStorage.clear();
+                navigate('/login');
             }
         };
 
@@ -271,31 +254,29 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         const fetchStats = async () => {
             try {
                 const res = await api.get('/api/panel/stats');
-                if (isMounted.current) {
-                    setStats(res.data);
-                }
+                setStats(res.data);
             } catch { }
         };
         fetchStats();
     }, []);
 
-    /* ── Captcha Handlers (for non-Pro users only) ── */
+    /* ── Captcha Handlers - ONLY for free users ── */
     const resetCaptcha = useCallback(() => {
-        // FIX: Only reset captcha if user is not Pro AND component is mounted
-        if (!isProActive && isMounted.current) {
+        // Only reset if NOT Pro
+        if (!isProActive) {
             captchaDataRef.current = null;
             captchaIssuedRef.current = null;
             setCaptchaReady(false);
             clearTimeout(expiryTimerRef.current);
             if (captchaRef.current) {
-                captchaRef.current?.reset();
+                captchaRef.current.reset();
             }
         }
     }, [isProActive]);
 
     const handleVerify = useCallback((captchaData) => {
-        // FIX: Only handle verification if user is not Pro AND component is mounted
-        if (!isProActive && isMounted.current) {
+        // Only handle if NOT Pro
+        if (!isProActive) {
             captchaDataRef.current = captchaData;
             captchaIssuedRef.current = Date.now();
             setCaptchaReady(true);
@@ -335,13 +316,12 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         return errs;
     };
 
-    /* ── Launch (Skip captcha for Pro users) ── */
+    /* ── Launch ── */
     const launch = async () => {
         setLaunchError('');
         setLaunched(false);
         setAttackCompleted(false);
 
-        // Validate form first
         const errs = validate();
         if (Object.keys(errs).length > 0) {
             setErrors(errs);
@@ -353,7 +333,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             return;
         }
 
-        // Only check captcha for non-Pro users
+        // Only check captcha for FREE users
         if (!isProActive) {
             const captchaData = captchaDataRef.current;
             const issuedAt = captchaIssuedRef.current;
@@ -373,14 +353,13 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         setLaunching(true);
 
         try {
-            // Prepare request data - only include captchaData for non-Pro users
             const requestData = {
                 ip: form.ip,
                 port: form.port,
                 duration: form.duration
             };
 
-            // Only add captchaData for non-Pro users
+            // Only include captcha for FREE users
             if (!isProActive) {
                 requestData.captchaData = captchaDataRef.current;
             }
@@ -391,7 +370,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
 
             const data = res.data;
 
-            if (data.user && isMounted.current) {
+            if (data.user) {
                 setUser(data.user);
                 localStorage.setItem('user', JSON.stringify(data.user));
             }
@@ -410,28 +389,25 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             startStatusPolling();
             setTimeout(() => setLaunched(false), 3000);
 
-            // FIX: Only reset captcha for non-Pro users
-            if (!isProActive && isMounted.current) {
+            // Only reset captcha for FREE users
+            if (!isProActive) {
                 resetCaptcha();
             }
 
             setForm({ ip: '', port: '', duration: '' });
 
-            // Refresh stats
             const statsRes = await api.get('/api/panel/stats');
-            if (isMounted.current) {
-                setStats(statsRes.data);
-            }
+            setStats(statsRes.data);
 
         } catch (err) {
             const decoded = err.decrypted ?? {};
             let errorMessage = decoded.message || 'Launch failed. Please try again.';
             const cooldownTime = decoded.cooldown ?? 5;
 
-            if (decoded.remainingAttacks !== undefined && isMounted.current) {
+            if (decoded.remainingAttacks !== undefined) {
                 setUser(prev => ({ ...prev, remainingAttacks: decoded.remainingAttacks }));
             }
-            if (decoded.credits !== undefined && isMounted.current) {
+            if (decoded.credits !== undefined) {
                 setUser(prev => ({ ...prev, credits: decoded.credits }));
             }
 
@@ -449,14 +425,12 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                 setLaunchError(errorMessage);
             }
 
-            // FIX: Only reset captcha for non-Pro users
-            if (!isProActive && isMounted.current) {
+            // Only reset captcha for FREE users
+            if (!isProActive) {
                 resetCaptcha();
             }
         } finally {
-            if (isMounted.current) {
-                setLaunching(false);
-            }
+            setLaunching(false);
         }
     };
 
@@ -465,9 +439,6 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     const progressPct = attackStatus
         ? Math.min(100, Math.round(((attackStatus.duration - timeLeft) / attackStatus.duration) * 100))
         : 0;
-
-    // Force hide captcha for Pro users
-    const showCaptcha = !isProActive;
 
     /* ── Loading ── */
     if (!user) return (
@@ -498,8 +469,9 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
                     <div className="flex flex-col gap-6">
 
-                        {/* Stats Section */}
+                        {/* Stats Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* Plan Card */}
                             <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${cardCls} ${isProActive ? 'border-red-500/30' : ''}`}>
                                 <div className="flex items-center gap-3">
                                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isProActive ? 'bg-red-600/20 border border-red-600/30' : 'bg-red-600/10 border border-red-600/20'}`}>
@@ -514,6 +486,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                 </div>
                             </div>
 
+                            {/* Total Attacks Card */}
                             <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${cardCls}`}>
                                 <div className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center shrink-0">
@@ -529,6 +502,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                 </div>
                             </div>
 
+                            {/* Total Users Card */}
                             <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${cardCls}`}>
                                 <div className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center shrink-0">
@@ -544,24 +518,29 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                             </div>
                         </div>
 
-                        {/* Pro expiry and warnings */}
-                        {isProActive && (
-                            <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${cardCls}`}>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center shrink-0">
-                                        <FaCalendarAlt className="text-red-500" size={15} />
+                        {/* Pro Info or Free Warning */}
+                        {isProActive ? (
+                            <div className={`rounded-2xl p-4 sm:p-5 border flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 ${dark ? 'bg-green-500/[0.06] border-green-500/25' : 'bg-green-50 border-green-200'}`}>
+                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                    <div className="w-9 h-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                        <FaCrown className="text-green-500" size={15} />
                                     </div>
                                     <div>
-                                        <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Plan Expires In</p>
-                                        <p className="font-black text-xl text-red-500" style={{ fontFamily: "'Rajdhani', sans-serif" }}>{daysLeft} days</p>
-                                        <p className={`text-xs mt-1 ${dark ? 'text-slate-600' : 'text-slate-400'}`}>{user?.subscription?.plan?.toUpperCase() || 'PRO'} plan</p>
+                                        <p className={`font-bold text-sm mb-0.5 ${dark ? 'text-green-300' : 'text-green-700'}`} style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.05em' }}>
+                                            PRO PLAN ACTIVE — UNLIMITED ATTACKS
+                                        </p>
+                                        <p className={`text-xs leading-relaxed ${dark ? 'text-green-400/70' : 'text-green-600'}`}>
+                                            Max duration: <span className="font-bold">300 seconds</span>.
+                                            {daysLeft <= 7 && daysLeft > 0 && (
+                                                <span className="block mt-1 text-yellow-500 font-bold">
+                                                    ⚠️ Your plan expires in {daysLeft} days!
+                                                </span>
+                                            )}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                        )}
-
-                        {/* Free-tier warning */}
-                        {!isProActive && (
+                        ) : (
                             <div className={`rounded-2xl p-4 sm:p-5 border flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 ${dark ? 'bg-yellow-500/[0.06] border-yellow-500/25' : 'bg-yellow-50 border-yellow-200'}`}>
                                 <div className="flex items-start gap-3 flex-1 min-w-0">
                                     <div className="w-9 h-9 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -574,7 +553,6 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                         <p className={`text-xs leading-relaxed ${dark ? 'text-yellow-400/70' : 'text-yellow-600'}`}>
                                             You have <span className="font-bold">{user?.credits || 0} credits</span> remaining.
                                             Each attack costs 1 credit. Max duration: <span className="font-bold">60 seconds</span>.
-                                            Upgrade to <span className="font-bold">Pro</span> for <span className="font-bold">unlimited attacks</span> and <span className="font-bold">300 second</span> attacks!
                                         </p>
                                     </div>
                                 </div>
@@ -584,31 +562,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                             </div>
                         )}
 
-                        {/* Pro info */}
-                        {isProActive && (
-                            <div className={`rounded-2xl p-4 sm:p-5 border flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 ${dark ? 'bg-green-500/[0.06] border-green-500/25' : 'bg-green-50 border-green-200'}`}>
-                                <div className="flex items-start gap-3 flex-1 min-w-0">
-                                    <div className="w-9 h-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                        <FaCrown className="text-green-500" size={15} />
-                                    </div>
-                                    <div>
-                                        <p className={`font-bold text-sm mb-0.5 ${dark ? 'text-green-300' : 'text-green-700'}`} style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.05em' }}>
-                                            PRO PLAN ACTIVE — UNLIMITED ATTACKS
-                                        </p>
-                                        <p className={`text-xs leading-relaxed ${dark ? 'text-green-400/70' : 'text-green-600'}`}>
-                                            You have <span className="font-bold">unlimited attacks</span>. Max duration: <span className="font-bold">300 seconds</span>.
-                                            {daysLeft <= 7 && daysLeft > 0 && (
-                                                <span className="block mt-1 text-yellow-500 font-bold">
-                                                    ⚠️ Your plan expires in {daysLeft} days!
-                                                </span>
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ── Attack Config ── */}
+                        {/* Attack Configuration */}
                         <div className={`rounded-2xl p-5 sm:p-6 border transition-all ${cardCls}`}>
                             <div className="flex items-center gap-3 mb-5">
                                 <div className="w-9 h-9 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center">
@@ -625,7 +579,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                             </div>
 
                             <div className="space-y-4">
-                                {/* IP */}
+                                {/* IP Input */}
                                 <div>
                                     <label className="bd-label">Target IP Address</label>
                                     <input name="ip" value={form.ip} onChange={handle} placeholder="e.g. 203.0.113.1"
@@ -656,7 +610,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                     </div>
                                 </div>
 
-                                {/* Status messages */}
+                                {/* Status Messages */}
                                 {attackCompleted && (
                                     <div className="rounded-xl p-4 border border-green-500/25 bg-green-500/8 flex items-center gap-2.5">
                                         <FaCheckCircle className="text-green-500 shrink-0" size={15} />
@@ -679,8 +633,8 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                     </div>
                                 )}
 
-                                {/* CAPTCHA SECTION - Only show for non-Pro users */}
-                                {showCaptcha && (
+                                {/* CAPTCHA - ONLY for Free Users */}
+                                {!isProActive && (
                                     <CaptchaSection
                                         dark={dark}
                                         captchaReady={captchaReady}
@@ -692,7 +646,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                     />
                                 )}
 
-                                {/* Pro benefit message */}
+                                {/* Pro Benefit Message */}
                                 {isProActive && (
                                     <div className={`w-full py-3 px-4 rounded-xl border flex items-center gap-2.5 ${dark ? 'border-yellow-500/30 bg-yellow-500/[0.06]' : 'border-yellow-400/40 bg-yellow-50'
                                         }`}>
@@ -742,7 +696,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                 )}
                             </div>
 
-                            {/* Live attack card */}
+                            {/* Live Attack Card */}
                             {attackStatus?.status === 'running' && (
                                 <div className="rounded-xl p-4 mb-3 border-2" style={{ borderColor: 'rgba(220,38,38,0.5)', background: dark ? 'rgba(220,38,38,0.06)' : 'rgba(220,38,38,0.04)' }}>
                                     <div className="flex items-center justify-between mb-2">
@@ -768,7 +722,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                 </div>
                             )}
 
-                            {/* History list */}
+                            {/* History List */}
                             {attackHistory.length === 0 && !attackStatus ? (
                                 <div className="text-center py-8">
                                     <FaBullseye className={`mx-auto mb-2 ${dark ? 'text-slate-700' : 'text-slate-300'}`} size={22} />
