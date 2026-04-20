@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     FaExclamationTriangle, FaCheckCircle, FaTrash, FaHistory,
     FaGem, FaBullseye, FaBan, FaLock, FaRocket,
-    FaUsers, FaCrown, FaWrench, FaCalendarAlt, FaFire
+    FaUsers, FaCrown, FaWrench, FaFire
 } from 'react-icons/fa';
 import { MdRadar } from 'react-icons/md';
 import Navbar from '../components/Navbar';
