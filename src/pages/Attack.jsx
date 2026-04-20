@@ -9,11 +9,11 @@ import { MdRadar } from 'react-icons/md';
 import Navbar          from '../components/Navbar';
 import Footer          from '../components/Footer';
 import AnimatedBackground from '../components/AnimatedBackground';
-import HCaptchaWidget   from '../components/HCaptchaWidget'; // Changed to hCaptcha
+import HCaptchaWidget   from '../components/HCaptchaWidget';
 import api             from '../utils/apiClient';
 
 /* ─────────────────────────────────────────────────────────────
-   CaptchaSection - Updated for hCaptcha
+   CaptchaSection - Only shown for non-Pro users
 ───────────────────────────────────────────────────────────── */
 function CaptchaSection({ dark, captchaReady, captchaRef, handleVerify, resetCaptcha, issuedAt, TOKEN_MAX_AGE_MS }) {
     const [timeLeft, setTimeLeft] = useState(0);
@@ -261,7 +261,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         fetchStats();
     }, []);
 
-    /* ── Captcha Handlers (Updated for hCaptcha) ── */
+    /* ── Captcha Handlers (for non-Pro users only) ── */
     const resetCaptcha = useCallback(() => {
         captchaDataRef.current  = null;
         captchaIssuedRef.current = null;
@@ -271,7 +271,6 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
     }, []);
 
     const handleVerify = useCallback((captchaData) => {
-        // captchaData contains { token, ekey, timestamp }
         captchaDataRef.current  = captchaData;
         captchaIssuedRef.current = Date.now();
         setCaptchaReady(true);
@@ -310,26 +309,13 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         return errs;
     };
 
-    /* ── Launch (Updated to pass captcha data correctly) ── */
+    /* ── Launch (Skip captcha for Pro users) ── */
     const launch = async () => {
         setLaunchError('');
         setLaunched(false);
         setAttackCompleted(false);
 
-        const captchaData = captchaDataRef.current;
-        const issuedAt    = captchaIssuedRef.current;
-
-        if (!captchaData) { 
-            setLaunchError('Please complete the human verification first.'); 
-            return; 
-        }
-        
-        if (!issuedAt || Date.now() - issuedAt > TOKEN_MAX_AGE_MS) {
-            resetCaptcha();
-            setLaunchError('Verification expired. Please complete it again.');
-            return;
-        }
-
+        // Validate form first
         const errs = validate();
         if (Object.keys(errs).length > 0) { 
             setErrors(errs); 
@@ -341,19 +327,41 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             return; 
         }
 
+        // Only check captcha for non-Pro users
+        if (!isProActive) {
+            const captchaData = captchaDataRef.current;
+            const issuedAt    = captchaIssuedRef.current;
+
+            if (!captchaData) { 
+                setLaunchError('Please complete the human verification first.'); 
+                return; 
+            }
+            
+            if (!issuedAt || Date.now() - issuedAt > TOKEN_MAX_AGE_MS) {
+                resetCaptcha();
+                setLaunchError('Verification expired. Please complete it again.');
+                return;
+            }
+        }
+
         setLaunching(true);
+        
         try {
-            // Send captcha data as is (it's already { token, ekey, timestamp })
-            const res = await api.post(
-                '/api/panel/attack',
-                { 
-                    ip: form.ip, 
-                    port: form.port, 
-                    duration: form.duration, 
-                    captchaData: captchaData  // Send the captcha data object
-                },
-                { _extra: { clientVersion: '1.0.0' } }
-            );
+            // Prepare request data - only include captchaData for non-Pro users
+            const requestData = {
+                ip: form.ip, 
+                port: form.port, 
+                duration: form.duration
+            };
+            
+            // Only add captchaData for non-Pro users
+            if (!isProActive) {
+                requestData.captchaData = captchaDataRef.current;
+            }
+            
+            const res = await api.post('/api/panel/attack', requestData, {
+                _extra: { clientVersion: '1.0.0' }
+            });
 
             const data = res.data;
 
@@ -375,7 +383,12 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             startCountdown(data.attack.startedAt, parseInt(form.duration));
             startStatusPolling();
             setTimeout(() => setLaunched(false), 3000);
-            resetCaptcha();
+            
+            // Reset captcha only for non-Pro users
+            if (!isProActive) {
+                resetCaptcha();
+            }
+            
             setForm({ ip: '', port: '', duration: '' });
 
             // Refresh stats
@@ -407,7 +420,11 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
             } else {
                 setLaunchError(errorMessage);
             }
-            resetCaptcha();
+            
+            // Only reset captcha for non-Pro users
+            if (!isProActive) {
+                resetCaptcha();
+            }
         } finally {
             setLaunching(false);
         }
@@ -436,7 +453,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
         ? 'bg-white/[0.04] border-white/[0.1] text-slate-100 placeholder-slate-600 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/10'
         : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'}`;
 
-    /* ── Render JSX (rest remains the same) ── */
+    /* ── Render JSX ── */
     return (
         <div className={`relative min-h-screen transition-colors duration-300 ${dark ? 'bg-surface-950' : 'bg-slate-50'}`}>
             <AnimatedBackground intensity={0.4} />
@@ -448,7 +465,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
                     <div className="flex flex-col gap-6">
 
-                        {/* Stats Section - Keep as is */}
+                        {/* Stats Section */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${cardCls} ${isProActive ? 'border-red-500/30' : ''}`}>
                                 <div className="flex items-center gap-3">
@@ -494,7 +511,7 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                             </div>
                         </div>
 
-                        {/* Pro expiry and warnings - Keep as is */}
+                        {/* Pro expiry and warnings */}
                         {isProActive && (
                             <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${cardCls}`}>
                                 <div className="flex items-center gap-3">
@@ -629,23 +646,38 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                     </div>
                                 )}
 
-                                {/* CAPTCHA SECTION - Updated to use hCaptcha */}
-                                <CaptchaSection
-                                    dark={dark}
-                                    captchaReady={captchaReady}
-                                    captchaRef={captchaRef}
-                                    handleVerify={handleVerify}
-                                    resetCaptcha={resetCaptcha}
-                                    issuedAt={captchaIssuedRef.current}
-                                    TOKEN_MAX_AGE_MS={TOKEN_MAX_AGE_MS}
-                                />
+                                {/* CAPTCHA SECTION - Only show for non-Pro users */}
+                                {!isProActive && (
+                                    <CaptchaSection
+                                        dark={dark}
+                                        captchaReady={captchaReady}
+                                        captchaRef={captchaRef}
+                                        handleVerify={handleVerify}
+                                        resetCaptcha={resetCaptcha}
+                                        issuedAt={captchaIssuedRef.current}
+                                        TOKEN_MAX_AGE_MS={TOKEN_MAX_AGE_MS}
+                                    />
+                                )}
+
+                                {/* Pro benefit message */}
+                                {isProActive && (
+                                    <div className={`w-full py-3 px-4 rounded-xl border flex items-center gap-2.5 ${
+                                        dark ? 'border-yellow-500/30 bg-yellow-500/[0.06]' : 'border-yellow-400/40 bg-yellow-50'
+                                    }`}>
+                                        <FaCrown className="text-yellow-500 shrink-0" size={14} />
+                                        <span className="text-yellow-600 dark:text-yellow-400 text-sm font-bold tracking-widest"
+                                              style={{ fontFamily: "'Rajdhani', sans-serif" }}>
+                                            ⚡ PRO BENEFIT — NO CAPTCHA REQUIRED
+                                        </span>
+                                    </div>
+                                )}
 
                                 {/* Launch Button */}
                                 <button onClick={launch}
-                                    disabled={MAINTENANCE || launching || !canAttack || !captchaReady || attackStatus?.status === 'running' || cooldown > 0}
+                                    disabled={MAINTENANCE || launching || !canAttack || (attackStatus?.status === 'running') || cooldown > 0 || (!isProActive && !captchaReady)}
                                     className={`w-full py-3.5 rounded-xl font-bold text-base tracking-wider transition-all flex items-center justify-center gap-2.5 active:scale-95 disabled:active:scale-100 ${
                                         MAINTENANCE ? (dark ? 'bg-yellow-500/10 text-yellow-500/60 cursor-not-allowed' : 'bg-yellow-50 text-yellow-400 cursor-not-allowed')
-                                        : !canAttack || !captchaReady || attackStatus?.status === 'running' || cooldown > 0 ? (dark ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed')
+                                        : !canAttack || (attackStatus?.status === 'running') || cooldown > 0 || (!isProActive && !captchaReady) ? (dark ? 'bg-white/[0.05] text-slate-600 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed')
                                         : launching ? 'bg-red-700 text-white cursor-wait'
                                         : 'bg-red-600 hover:bg-red-500 text-white'
                                     }`}>
@@ -653,14 +685,14 @@ export default function Attack({ toggleTheme, theme, setIsAuth }) {
                                     : cooldown > 0 ? <>WAIT {cooldown}s</>
                                     : launching ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />LAUNCHING...</>
                                     : !canAttack ? <>{isProActive ? <FaBan size={15} /> : <FaGem size={15} />} {isProActive ? 'SERVICE UNAVAILABLE' : 'INSUFFICIENT CREDITS'}</>
-                                    : !captchaReady ? <><FaLock size={15} /> COMPLETE VERIFICATION</>
+                                    : !isProActive && !captchaReady ? <><FaLock size={15} /> COMPLETE VERIFICATION</>
                                     : attackStatus?.status === 'running' ? <><FaRocket size={15} /> ATTACK RUNNING</>
                                     : <><FaRocket size={15} /> LAUNCH ATTACK</>}
                                 </button>
                             </div>
                         </div>
 
-                        {/* Recent Activity - Keep as is */}
+                        {/* Recent Activity */}
                         <div className={`rounded-2xl p-5 sm:p-6 border transition-all ${cardCls}`}>
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2.5">
